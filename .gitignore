@@ -1,0 +1,16 @@
+# Archivos y carpetas a ignorar
+*.zip
+*.rar
+*.7z
+
+# Archivos temporales de Excel / Office
+~$*.xls
+~$*.xlsx
+~$*.doc
+~$*.docx
+~$*.ppt
+~$*.pptx
+
+# SO
+Thumbs.db
+.DS_Store

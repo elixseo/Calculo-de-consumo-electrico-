@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard premium de control y cálculo de consumo de energía eléctrica de maquinarias para Limpiolux S.A. y Ceiling Solution S.A.">
+  <title>Consumo Eléctrico - Control de Maquinarias</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dark-theme">
+
+  <!-- ════════════════════════════════════════════════════ LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="logo-icon"><i class="fa-solid fa-bolt-lightning"></i></div>
+        <h1>Control Energético</h1>
+        <p>Grupo Limpiolux — Acceso Seguro</p>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <div class="login-field">
+        <label for="login-username"><i class="fa-solid fa-user"></i> Usuario</label>
+        <input type="text" id="login-username" autocomplete="username" placeholder="Ingrese su usuario" />
+      </div>
+      <div class="login-field">
+        <label for="login-password"><i class="fa-solid fa-lock"></i> Contraseña</label>
+        <input type="password" id="login-password" autocomplete="current-password" placeholder="Ingrese su contraseña" />
+      </div>
+      <button class="btn-login" id="btn-do-login" onclick="doLogin()">Ingresar al Sistema</button>
+    </div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">
+          <i class="fa-solid fa-bolt-lightning text-gradient"></i>
+        </div>
+        <div class="brand-info">
+          <h2>Grupo Limpiolux</h2>
+          <span>Control Energético</span>
+        </div>
+      </div>
+      
+      <nav class="sidebar-menu">
+        <a href="#" class="menu-item active" id="btn-nav-dashboard" onclick="switchTab('dashboard')">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Panel General</span>
+        </a>
+        <a href="#" class="menu-item" id="btn-nav-table" onclick="switchTab('table')">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Cálculos Detallados</span>
+        </a>
+        <a href="#" class="menu-item" id="btn-nav-horas" onclick="switchTab('horas')">
+          <i class="fa-regular fa-clock"></i>
+          <span>Carga de Horas</span>
+        </a>
+        <a href="#" class="menu-item admin-only" id="btn-nav-import" onclick="switchTab('import')">
+          <i class="fa-solid fa-file-import"></i>
+          <span>Importar Planilla</span>
+        </a>
+        <a href="#" class="menu-item admin-only" id="btn-nav-users" onclick="switchTab('users')">
+          <i class="fa-solid fa-users-gear"></i>
+          <span>Gestión de Usuarios</span>
+        </a>
+      </nav>
+      
+      <div class="sidebar-user-info" id="sidebar-user-info">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div class="user-meta">
+          <strong id="sidebar-nombre">—</strong>
+          <span id="sidebar-role">—</span>
+        </div>
+        <button class="btn-logout" onclick="doLogout()" title="Cerrar sesión"><i class="fa-solid fa-right-from-bracket"></i></button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Top Bar Header -->
+      <header class="top-bar">
+        <div class="header-title">
+          <h1 id="page-title">Panel General de Consumo</h1>
+          <p id="page-subtitle">Indicadores y estadísticas de consumo eléctrico de maquinarias</p>
+        </div>
+        
+        <div class="header-controls">
+          <!-- Month Selector -->
+          <div class="control-group">
+            <label for="select-month-global"><i class="fa-regular fa-calendar"></i> Período:</label>
+            <select id="select-month-global" onchange="onPeriodChange(this.value)">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          
+          <!-- Business Unit Filter -->
+          <div class="control-group">
+            <label for="select-bu-global"><i class="fa-solid fa-briefcase"></i> Unidad:</label>
+            <select id="select-bu-global" onchange="onBUChange(this.value)">
+              <option value="">Todas las Unidades</option>
+              <option value="Limpiolux S.A.">Limpiolux S.A.</option>
+              <option value="Ceiling Solution S.A.">Ceiling Solution S.A.</option>
+            </select>
+          </div>
+
+          <!-- Service Filter -->
+          <div class="control-group">
+            <label for="select-service-global"><i class="fa-solid fa-handshake-angle"></i> Servicio:</label>
+            <select id="select-service-global" onchange="onServiceChange(this.value)" style="max-width: 260px;">
+              <option value="">Todos los Servicios</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <!-- TAB 1: DASHBOARD VIEW -->
+      <section id="tab-dashboard" class="tab-panel active">
+        
+        <!-- KPI Cards Grid -->
+        <div class="kpi-grid">
+          <!-- KPI 1: Active Machines -->
+          <div class="kpi-card">
+            <div class="kpi-icon icon-cyan">
+              <i class="fa-solid fa-gears"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Máquinas Activas</span>
+              <h3 class="kpi-value" id="kpi-active-machines">-</h3>
+            </div>
+          </div>
+          
+          <!-- KPI 2: Services -->
+          <div class="kpi-card">
+            <div class="kpi-icon icon-purple">
+              <i class="fa-solid fa-handshake-angle"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Servicios Operativos</span>
+              <h3 class="kpi-value" id="kpi-services">-</h3>
+            </div>
+          </div>
+          
+          <!-- KPI 3: Total Power -->
+          <div class="kpi-card">
+            <div class="kpi-icon icon-yellow">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Potencia Instalada</span>
+              <h3 class="kpi-value" id="kpi-total-power">- kW</h3>
+            </div>
+          </div>
+
+          <!-- KPI 4: Daily Consumption -->
+          <div class="kpi-card">
+            <div class="kpi-icon icon-orange">
+              <i class="fa-solid fa-plug-circle-bolt"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Consumo Diario</span>
+              <h3 class="kpi-value" id="kpi-daily-consumption">- kWh/día</h3>
+            </div>
+          </div>
+          
+          <!-- KPI 5: Monthly Consumption -->
+          <div class="kpi-card">
+            <div class="kpi-icon icon-green">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Consumo Mensual Est.</span>
+              <h3 class="kpi-value" id="kpi-monthly-consumption">- kWh/mes</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-row">
+          <!-- Trend Chart (Full Width) -->
+          <div class="chart-card card-full">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-chart-area"></i> <span id="chart-trend-title">Histórico de Consumo por Unidad de Negocio (kWh / Mes)</span></h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="chart-trend"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-row grid-2">
+          <!-- Top Machines Chart -->
+          <div class="chart-card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-circle-notch"></i> Consumo por Tipo de Maquinaria (Top 8)</h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-container-donut">
+                <canvas id="chart-machines"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Services Chart -->
+          <div class="chart-card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-chart-column"></i> <span id="chart-services-title">Consumo por Servicio / Cliente (Top 8)</span></h3>
+            </div>
+            <div class="card-body">
+              <div class="chart-container-bar">
+                <canvas id="chart-services"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: DETAILED TABLE VIEW -->
+      <section id="tab-table" class="tab-panel">
+        <div class="table-card">
+          <div class="card-header table-header-actions">
+            <!-- Search & Actions -->
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="input-search" placeholder="Buscar por Servicio, Máquina, Marca, N° Casa, N° Máquina..." oninput="onSearchInput()">
+            </div>
+            
+            <div class="action-buttons">
+              <button class="btn btn-secondary" onclick="exportDataToCSV()">
+                <i class="fa-solid fa-file-csv"></i> Exportar CSV
+              </button>
+              <button class="btn btn-primary" onclick="exportDataToExcel()">
+                <i class="fa-solid fa-file-excel"></i> Exportar Excel
+              </button>
+            </div>
+          </div>
+          
+          <div class="table-container">
+            <table id="data-table">
+              <thead>
+                <tr>
+                  <th>Nombre Servicio</th>
+                  <th>N° Casa</th>
+                  <th>N° Máquina</th>
+                  <th>Máquina</th>
+                  <th>Marca</th>
+                  <th>Modelo</th>
+                  <th>Fecha Ingreso</th>
+                  <th>Potencia (W)</th>
+                  <th>Hs/Día</th>
+                  <th>Cálculo (Wh/Día)</th>
+                  <th class="actions-col">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="table-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Pagination -->
+          <div class="pagination-container">
+            <div class="pagination-info">
+              Mostrando <span id="pag-start">0</span> a <span id="pag-end">0</span> de <span id="pag-total">0</span> registros
+            </div>
+            <div class="pagination-controls">
+              <button class="btn-pag" id="btn-pag-prev" onclick="prevPage()"><i class="fa-solid fa-chevron-left"></i></button>
+              <span class="pag-pages" id="pag-numbers">
+                <!-- Pages -->
+              </span>
+              <button class="btn-pag" id="btn-pag-next" onclick="nextPage()"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: IMPORT VIEW -->
+      <section id="tab-import" class="tab-panel">
+        <div class="grid-2">
+          
+          <!-- Upload Box -->
+          <div class="chart-card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-cloud-arrow-up"></i> Cargar Inventario Mensual</h3>
+            </div>
+            <div class="card-body">
+              <form id="form-import" onsubmit="handleImport(event)">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="import-year"><i class="fa-regular fa-calendar"></i> Año:</label>
+                    <select id="import-year" required>
+                      <option value="2025">2025</option>
+                      <option value="2026" selected>2026</option>
+                      <option value="2027">2027</option>
+                    </select>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="import-month"><i class="fa-regular fa-calendar-days"></i> Mes:</label>
+                    <select id="import-month" required>
+                      <option value="01">Enero</option>
+                      <option value="02">Febrero</option>
+                      <option value="03" selected>Marzo</option>
+                      <option value="04">Abril</option>
+                      <option value="05">Mayo</option>
+                      <option value="06">Junio</option>
+                      <option value="07">Julio</option>
+                      <option value="08">Agosto</option>
+                      <option value="09">Septiembre</option>
+                      <option value="10">Octubre</option>
+                      <option value="11">Noviembre</option>
+                      <option value="12">Diciembre</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Drag and Drop Area -->
+                <div class="drop-zone" id="drop-zone" onclick="document.getElementById('import-file').click()">
+                  <i class="fa-solid fa-file-excel drop-icon"></i>
+                  <p>Arrastra aquí tu archivo Excel o <span>haz clic para buscar</span></p>
+                  <span class="file-rules">Soporta formatos .xlsx y .xls</span>
+                  <input type="file" id="import-file" accept=".xlsx, .xls" style="display: none;" onchange="onFileSelected(this)">
+                </div>
+                
+                <div class="selected-file-container" id="selected-file-info" style="display: none;">
+                  <i class="fa-solid fa-file-circle-check text-success"></i>
+                  <div class="file-details">
+                    <span id="selected-file-name">nombre_del_archivo.xlsx</span>
+                    <span id="selected-file-size">0 KB</span>
+                  </div>
+                  <button type="button" class="btn-icon" onclick="clearSelectedFile()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block" id="btn-import-submit" disabled>
+                  <i class="fa-solid fa-upload"></i> Importar y Calcular
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- History of Imports -->
+          <div class="chart-card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial de Importaciones</h3>
+            </div>
+            <div class="card-body">
+              <div class="table-container history-table-container">
+                <table class="history-table">
+                  <thead>
+                    <tr>
+                      <th>Archivo</th>
+                      <th>Período</th>
+                      <th>Registros</th>
+                      <th>Fecha Carga</th>
+                      <th class="actions-col">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="history-body">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          
+          
+        </div>
+      </section>
+
+  <!-- Inline Edit Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="fa-regular fa-pen-to-square text-gradient"></i> Editar Parámetros de Consumo</h3>
+        <button class="modal-close" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-edit" onsubmit="handleEditSave(event)">
+          <input type="hidden" id="edit-row-id">
+          
+          <div class="info-group">
+            <div class="info-item">
+              <span class="info-label">Servicio</span>
+              <span class="info-val" id="edit-info-service">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">N° Máquina</span>
+              <span class="info-val" id="edit-info-nro-machine">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Máquina</span>
+              <span class="info-val" id="edit-info-machine">-</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="edit-potencia"><i class="fa-solid fa-bolt"></i> Potencia de Máquina (Watts):</label>
+            <input type="number" id="edit-potencia" min="0" step="any" required placeholder="Ej: 309.5">
+            <span class="field-help">Esta potencia se actualizará a nivel maestro para todas las asignaciones de esta máquina.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-hs-dia"><i class="fa-regular fa-clock"></i> Horas de Uso por Día:</label>
+            <input type="number" id="edit-hs-dia" min="0" max="24" step="any" required placeholder="Ej: 2.5">
+            <span class="field-help">Las horas de uso corresponden solo a este servicio en este período mensual.</span>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════ TAB: CARGA DE HORAS -->
+  <section id="tab-horas" class="tab-panel">
+    <div class="table-card">
+      <div class="table-header-actions" style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <h3 style="font-size:15px; font-weight:700;"><i class="fa-regular fa-clock"></i> Carga de Horas por Servicio</h3>
+          <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Ingrese las Hs/Día para cada máquina. Al finalizar el mes, cierre el período con foto de auditoría.</p>
+        </div>
+      </div>
+      <div style="padding: 20px 24px;">
+        <div id="horas-accordion" class="service-accordion">
+          <p style="color:var(--text-dim); font-size:14px;">Seleccione un período para cargar horas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════ TAB: GESTIÓN DE USUARIOS -->
+  <section id="tab-users" class="tab-panel">
+    <div class="create-user-form">
+      <h3><i class="fa-solid fa-user-plus"></i> Crear Nuevo Usuario</h3>
+      <div class="form-row-3">
+        <div class="form-field">
+          <label>Nombre Completo</label>
+          <input type="text" id="new-user-nombre" placeholder="Ej: Juan García" />
+        </div>
+        <div class="form-field">
+          <label>Usuario de Acceso</label>
+          <input type="text" id="new-user-username" placeholder="Ej: jgarcia" />
+        </div>
+        <div class="form-field">
+          <label>Contraseña Inicial</label>
+          <input type="password" id="new-user-password" placeholder="Contraseña" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Rol</label>
+          <select id="new-user-role">
+            <option value="usuario">Supervisor / Operario</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn btn-primary" onclick="createUser()" style="height:40px; padding: 0 24px;">
+            <i class="fa-solid fa-plus"></i> Crear Usuario
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="users-grid" id="users-grid">
+      <!-- populated by JS -->
+    </div>
+  </section>
+
+    </main>
+  </div>
+
+  <!-- ════════════════════════════════ MODAL: ASIGNAR SERVICIOS -->
+  <div class="modal-overlay" id="assign-services-modal">
+    <div class="modal-box modal-lg">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-handshake-angle"></i> Asignar Servicios a <span id="assign-modal-username"></span></h3>
+        <button class="modal-close" onclick="closeAssignModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="svc-search-input" id="svc-modal-search" placeholder="Buscar servicio..." oninput="filterModalServices(this.value)" />
+        <div class="services-checklist" id="services-checklist">
+          <!-- populated by JS -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeAssignModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="saveAssignedServices()"><i class="fa-solid fa-floppy-disk"></i> Guardar Asignación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════ MODAL: CIERRE MENSUAL -->
+  <div class="modal-overlay" id="closure-modal">
+    <div class="modal-box modal-sm">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-lock"></i> Cerrar Período — Foto de Auditoría</h3>
+        <button class="modal-close" onclick="closeClosureModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:18px;">Adjunte una foto del estado del servicio (medidor, planilla firmada, equipos) como constancia de auditoría. <strong style="color:var(--text-main);">Esta acción bloqueará la edición de horas para este servicio en el mes seleccionado.</strong></p>
+        <div class="upload-zone" id="closure-upload-zone" onclick="document.getElementById('closure-photo-input').click()">
+          <div class="upload-icon"><i class="fa-solid fa-camera"></i></div>
+          <p>Haga clic o arrastre la foto aquí</p>
+          <small>JPG, PNG, WEBP — Máx. 15 MB</small>
+          <img id="photo-preview" src="" alt="Vista previa" />
+        </div>
+        <input type="file" id="closure-photo-input" accept="image/*" style="display:none" onchange="previewPhoto(this)" />
+        <input type="hidden" id="closure-nro-casa" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeClosureModal()">Cancelar</button>
+        <button class="btn btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="submitClosure()"><i class="fa-solid fa-lock"></i> Confirmar Cierre</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════ MODAL: VER FOTO AUDITORÍA -->
+  <div class="modal-overlay" id="photo-viewer-modal">
+    <div class="modal-box" id="photo-viewer-modal">
+      <div class="modal-header">
+        <h3><i class="fa-regular fa-image"></i> Foto de Auditoría</h3>
+        <button class="modal-close" onclick="document.getElementById('photo-viewer-modal').classList.remove('active')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <img id="audit-photo-img" src="" alt="Foto de auditoría" style="max-width:100%; border-radius:10px;" />
+        <p class="photo-meta" id="audit-photo-meta"></p>
+      </div>
+    </div>
+  </div>
+  <!-- ════════════════════════════════ MODAL: CAMBIAR CONTRASEÑA -->
+  <div class="modal-overlay" id="change-password-modal">
+    <div class="modal-box modal-sm">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-key"></i> Cambiar Contraseña</h3>
+        <button class="modal-close" onclick="closePasswordModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:18px;">Nueva contraseña para: <strong id="pwd-modal-username" style="color:var(--text-main);"></strong></p>
+        <div class="form-group">
+          <label for="new-pwd-input">Nueva Contraseña</label>
+          <input type="password" id="new-pwd-input" placeholder="Ingrese nueva contraseña" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closePasswordModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="savePassword()"><i class="fa-solid fa-floppy-disk"></i> Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- App Script -->
+  <script src="js/app.js?v=2"></script>
+</body>
+</html>
