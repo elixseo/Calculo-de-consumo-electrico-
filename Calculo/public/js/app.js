@@ -555,11 +555,16 @@ function renderTable(rows) {
       tr.style.borderLeft = '2px solid var(--cyan)';
     }
     
+    const servicioNombre = row.nombre_servicio || `Casa ${row.nro_casa}`;
+    const maquinaNombre = row.maquina || '-';
+    const servicioDisplay = servicioNombre.length > 40 ? `${servicioNombre.substring(0, 40)}...` : servicioNombre;
+    const maquinaDisplay = maquinaNombre.length > 30 ? `${maquinaNombre.substring(0, 30)}...` : maquinaNombre;
+
     tr.innerHTML = `
-      <td>${row.nombre_servicio || `<span class="text-dim">Casa ${row.nro_casa}</span>`}</td>
+      <td title="${servicioNombre}" class="long-text-tooltip" data-tooltip="${servicioNombre}">${servicioDisplay}</td>
       <td>${row.nro_casa}</td>
       <td><strong>${row.nro_maquina}</strong></td>
-      <td>${row.maquina}</td>
+      <td title="${maquinaNombre}" class="long-text-tooltip" data-tooltip="${maquinaNombre}">${maquinaDisplay}</td>
       <td>${row.marca || '-'}</td>
       <td>${row.modelo || '-'}</td>
       <td>${row.fecha_incorporacion || '-'}</td>
