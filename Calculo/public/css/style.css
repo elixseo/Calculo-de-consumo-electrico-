@@ -6,6 +6,17 @@
   font-family: 'Inter', sans-serif;
 }
 
+html, body {
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
 :root {
   --bg-main: #0f121d;
   --bg-card: #161b2e;
@@ -56,6 +67,14 @@ body.dark-theme {
   left: 0;
   z-index: 100;
   transition: all var(--transition-speed);
+  overflow: auto;
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .sidebar-brand {
@@ -108,20 +127,27 @@ body.dark-theme {
 
 /* Sidebar Filters */
 .sidebar-filters {
-  padding: 0 16px;
+  padding: 0 12px;
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 16px;
-  max-height: 400px;
+  margin-bottom: 12px;
+  flex-shrink: 1;
   overflow-y: auto;
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-filters::-webkit-scrollbar {
+  display: none;
 }
 
 .sidebar-control-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-  padding: 12px 0;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -240,6 +266,14 @@ body.dark-theme {
   gap: 32px;
   min-width: 0; /* Crucial para evitar desbordamiento y habilitar scroll en hijos flex */
   overflow-x: hidden; /* Oculta desbordamientos laterales no deseados */
+  overflow-y: auto;
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.main-content::-webkit-scrollbar {
+  display: none;
 }
 
 /* --- Top Bar Header --- */
