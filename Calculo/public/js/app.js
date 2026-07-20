@@ -11,6 +11,8 @@ const state = {
   currentUser: null,
   token: null,
   excludedServices: new Set(),
+  excludedMachines: new Set(),
+  _machinesConfigLoaded: false,
   charts: {
     trend: null,
     machines: null,
@@ -18,11 +20,15 @@ const state = {
   }
 };
 
-// Load excluded services from localStorage on startup
+// Load excluded services & machines from localStorage on startup
 function loadExcludedServices() {
   const saved = localStorage.getItem('excludedServices');
   if (saved) {
     state.excludedServices = new Set(JSON.parse(saved));
+  }
+  const savedMachines = localStorage.getItem('excludedMachines');
+  if (savedMachines) {
+    state.excludedMachines = new Set(JSON.parse(savedMachines));
   }
 }
 
@@ -184,11 +190,13 @@ async function loadConfigServices() {
 
     services.forEach(svc => {
       const isExcluded = state.excludedServices.has(String(svc.nro_casa));
+      const nombre = svc.nombre_servicio || `Servicio Casa ${svc.nro_casa}`;
       const item = document.createElement('label');
       item.className = 'service-config-item';
       item.innerHTML = `
         <input type="checkbox" class="config-service-checkbox" value="${svc.nro_casa}" ${!isExcluded ? 'checked' : ''} />
-        <span class="service-name">${svc.nombre_servicio || `Servicio Casa ${svc.nro_casa}`}</span>
+        <span class="config-badge">N° ${svc.nro_casa}</span>
+        <span class="service-name">${nombre}</span>
       `;
       serviceList.appendChild(item);
     });
@@ -201,11 +209,11 @@ async function loadConfigServices() {
 }
 
 function filterConfigServices(searchText) {
-  const items = document.querySelectorAll('.service-config-item');
+  const items = document.querySelectorAll('#service-config-items .service-config-item');
   const text = searchText.toLowerCase();
   items.forEach(item => {
-    const name = item.querySelector('.service-name').textContent.toLowerCase();
-    item.style.display = name.includes(text) ? '' : 'none';
+    const label = item.textContent.toLowerCase();
+    item.style.display = label.includes(text) ? '' : 'none';
   });
 }
 
@@ -233,6 +241,103 @@ function saveConfigServices() {
 
   state.excludedServices = excluded;
   localStorage.setItem('excludedServices', JSON.stringify(Array.from(excluded)));
+  showToast('Éxito', 'success', 'Configuración guardada. Actualizando datos...');
+
+  state.currentPage = 1;
+  refreshData();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIGURATION: Manage excluded machines
+// ═══════════════════════════════════════════════════════════════════════════
+
+function switchConfigSubtab(name) {
+  // Toggle buttons
+  document.querySelectorAll('.config-subtab').forEach(btn => btn.classList.remove('active'));
+  document.getElementById(`subtab-btn-${name}`).classList.add('active');
+
+  // Toggle panels
+  document.querySelectorAll('.config-subpanel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`config-subpanel-${name}`).classList.add('active');
+
+  // Lazy-load machines the first time
+  if (name === 'machines' && !state._machinesConfigLoaded) {
+    loadConfigMachines();
+  }
+}
+
+async function loadConfigMachines() {
+  try {
+    const response = await fetch(`${API_BASE}/maquinas`, { headers: getAuthHeaders() });
+    if (!response.ok) throw new Error('Error al cargar máquinas.');
+    const machines = await response.json();
+
+    const container = document.getElementById('machines-config-list');
+    if (!machines || machines.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-dim); text-align:center;">No hay máquinas disponibles.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    const machineList = document.createElement('div');
+    machineList.className = 'service-config-items';
+    machineList.id = 'machine-config-items';
+
+    machines.forEach(m => {
+      const isExcluded = state.excludedMachines.has(String(m.nro_maquina));
+      const nombre = m.maquina || `Máquina ${m.nro_maquina}`;
+      const marca = m.marca ? ` — ${m.marca}` : '';
+      const item = document.createElement('label');
+      item.className = 'service-config-item';
+      item.innerHTML = `
+        <input type="checkbox" class="config-machine-checkbox" value="${m.nro_maquina}" ${!isExcluded ? 'checked' : ''} />
+        <span class="config-badge">N° ${m.nro_maquina}</span>
+        <span class="service-name">${nombre}${marca}</span>
+      `;
+      machineList.appendChild(item);
+    });
+
+    container.appendChild(machineList);
+    state._machinesConfigLoaded = true;
+  } catch (error) {
+    console.error('Error loading config machines:', error);
+    document.getElementById('machines-config-list').innerHTML = '<p style="color:red;">Error al cargar máquinas.</p>';
+  }
+}
+
+function filterConfigMachines(searchText) {
+  const items = document.querySelectorAll('#machine-config-items .service-config-item');
+  const text = searchText.toLowerCase();
+  items.forEach(item => {
+    const label = item.textContent.toLowerCase();
+    item.style.display = label.includes(text) ? '' : 'none';
+  });
+}
+
+function selectAllMachines() {
+  document.querySelectorAll('.config-machine-checkbox').forEach(cb => {
+    cb.checked = true;
+  });
+}
+
+function deselectAllMachines() {
+  document.querySelectorAll('.config-machine-checkbox').forEach(cb => {
+    cb.checked = false;
+  });
+}
+
+function saveConfigMachines() {
+  const checkboxes = document.querySelectorAll('.config-machine-checkbox');
+  const excluded = new Set();
+
+  checkboxes.forEach(cb => {
+    if (!cb.checked) {
+      excluded.add(String(cb.value));
+    }
+  });
+
+  state.excludedMachines = excluded;
+  localStorage.setItem('excludedMachines', JSON.stringify(Array.from(excluded)));
   showToast('Éxito', 'success', 'Configuración guardada. Actualizando datos...');
 
   state.currentPage = 1;
@@ -585,9 +690,12 @@ async function fetchTable() {
   }
 }
 
-// Filter rows by excluded services
+// Filter rows by excluded services and machines
 function filterRowsByExcludedServices(rows) {
-  return rows.filter(row => !state.excludedServices.has(String(row.nro_casa)));
+  return rows.filter(row =>
+    !state.excludedServices.has(String(row.nro_casa)) &&
+    !state.excludedMachines.has(String(row.nro_maquina))
+  );
 }
 
 // Render Table Rows

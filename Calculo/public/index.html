@@ -554,15 +554,26 @@
 
   <!-- ════════════════════════════ TAB: CONFIGURACIÓN -->
   <section id="tab-config" class="tab-panel">
-    <div class="config-card">
+    <!-- Config Sub-Tabs -->
+    <div class="config-subtabs">
+      <button class="config-subtab active" id="subtab-btn-services" onclick="switchConfigSubtab('services')">
+        <i class="fa-solid fa-handshake-angle"></i> Servicios
+      </button>
+      <button class="config-subtab" id="subtab-btn-machines" onclick="switchConfigSubtab('machines')">
+        <i class="fa-solid fa-gears"></i> Máquinas
+      </button>
+    </div>
+
+    <!-- Services Config Panel -->
+    <div class="config-card config-subpanel active" id="config-subpanel-services">
       <div class="card-header">
-        <h3><i class="fa-solid fa-sliders"></i> Seleccionar Servicios para Incluir en Cálculos</h3>
+        <h3><i class="fa-solid fa-handshake-angle"></i> Seleccionar Servicios para Incluir en Cálculos</h3>
         <p style="font-size:13px; color:var(--text-muted); margin-top:8px;">Marca los servicios que deseas incluir. Desmarca para excluir del cálculo de consumo.</p>
       </div>
       <div class="card-body">
         <div class="config-search">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="config-search-input" placeholder="Buscar servicio..." oninput="filterConfigServices(this.value)">
+          <input type="text" id="config-search-input" placeholder="Buscar por nombre o N° de casa..." oninput="filterConfigServices(this.value)">
         </div>
         <div class="services-config-list" id="services-config-list">
           <p style="color:var(--text-dim); text-align:center; padding:20px;">Cargando servicios...</p>
@@ -575,6 +586,34 @@
             <i class="fa-solid fa-xmark"></i> Desseleccionar Todo
           </button>
           <button class="btn btn-primary" onclick="saveConfigServices()">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Machines Config Panel -->
+    <div class="config-card config-subpanel" id="config-subpanel-machines">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-gears"></i> Seleccionar Máquinas para Incluir en Cálculos</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-top:8px;">Marca las máquinas que deseas incluir. Desmarca para excluir del cálculo de consumo.</p>
+      </div>
+      <div class="card-body">
+        <div class="config-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="config-machine-search-input" placeholder="Buscar por nombre, marca o N° de máquina..." oninput="filterConfigMachines(this.value)">
+        </div>
+        <div class="services-config-list" id="machines-config-list">
+          <p style="color:var(--text-dim); text-align:center; padding:20px;">Cargando máquinas...</p>
+        </div>
+        <div class="config-actions">
+          <button class="btn btn-secondary" onclick="selectAllMachines()">
+            <i class="fa-solid fa-check-double"></i> Seleccionar Todo
+          </button>
+          <button class="btn btn-secondary" onclick="deselectAllMachines()">
+            <i class="fa-solid fa-xmark"></i> Desseleccionar Todo
+          </button>
+          <button class="btn btn-primary" onclick="saveConfigMachines()">
             <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración
           </button>
         </div>

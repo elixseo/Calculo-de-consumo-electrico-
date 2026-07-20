@@ -361,6 +361,20 @@ app.get('/api/servicios', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/maquinas - master list of machines (for config panel)
+app.get('/api/maquinas', authenticate, async (req, res) => {
+  try {
+    const rows = await dbAll(
+      `SELECT nro_maquina, maquina, marca, modelo, potencia
+       FROM maquinas_potencia
+       ORDER BY maquina ASC, nro_maquina ASC`
+    );
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/dashboard
 app.get('/api/dashboard', authenticate, async (req, res) => {
   const { mes, unidad, servicio, maquina } = req.query;
