@@ -147,15 +147,22 @@
           <p id="page-subtitle">Indicadores y estadísticas de consumo eléctrico de maquinarias</p>
         </div>
 
-        <!-- Active Filters Display -->
-        <div class="active-filters-display">
-          <div class="filter-badge">
-            <i class="fa-regular fa-calendar"></i>
-            <span id="display-periodo">Junio 2026</span>
+        <!-- Filter Controls in Header -->
+        <div class="header-filters">
+          <div class="filter-control">
+            <label for="select-month-header"><i class="fa-regular fa-calendar"></i> Período:</label>
+            <select id="select-month-header" onchange="onPeriodChange(this.value)">
+              <!-- Dynamically populated -->
+            </select>
           </div>
-          <div class="filter-badge">
-            <i class="fa-solid fa-briefcase"></i>
-            <span id="display-unidad">Todas las Unidades</span>
+
+          <div class="filter-control">
+            <label for="select-bu-header"><i class="fa-solid fa-briefcase"></i> Unidad:</label>
+            <select id="select-bu-header" onchange="onBUChange(this.value)">
+              <option value="">Todas las Unidades</option>
+              <option value="Limpiolux S.A.">Limpiolux S.A.</option>
+              <option value="Ceiling Solution S.A.">Ceiling Solution S.A.</option>
+            </select>
           </div>
         </div>
       </header>

@@ -245,13 +245,15 @@ async function loadMonths() {
     const response = await fetch(`${API_BASE}/meses`, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Error al cargar los períodos.');
     const months = await response.json();
-    
+
     const selectGlobal = document.getElementById('select-month-global');
+    const selectHeader = document.getElementById('select-month-header');
     const selectImportMonth = document.getElementById('import-month');
     const selectImportYear = document.getElementById('import-year');
-    
+
     selectGlobal.innerHTML = '';
-    
+    if (selectHeader) selectHeader.innerHTML = '';
+
     if (months.length > 0) {
       months.forEach(m => {
         const option = document.createElement('option');
@@ -260,9 +262,16 @@ async function loadMonths() {
         const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         option.textContent = `${monthNames[parseInt(month) - 1]} ${year}`;
         selectGlobal.appendChild(option);
+
+        // Also add to header selector
+        if (selectHeader) {
+          const headerOption = option.cloneNode(true);
+          selectHeader.appendChild(headerOption);
+        }
       });
       if (!state.selectedMonth) state.selectedMonth = months[0];
       selectGlobal.value = state.selectedMonth;
+      if (selectHeader) selectHeader.value = state.selectedMonth;
       const [currYear, currMonth] = state.selectedMonth.split('-');
       if (selectImportYear) selectImportYear.value = currYear;
       if (selectImportMonth) selectImportMonth.value = currMonth;
@@ -329,6 +338,13 @@ async function onPeriodChange(val) {
   state.selectedService = '';
   state.selectedMachine = '';
   state.currentPage = 1;
+
+  // Sync both selectors
+  const selectGlobal = document.getElementById('select-month-global');
+  const selectHeader = document.getElementById('select-month-header');
+  if (selectGlobal) selectGlobal.value = val;
+  if (selectHeader) selectHeader.value = val;
+
   await loadServices();
   await loadMachines();
   updateFilterDisplay();
@@ -340,6 +356,13 @@ async function onBUChange(val) {
   state.selectedService = '';
   state.selectedMachine = '';
   state.currentPage = 1;
+
+  // Sync both selectors
+  const selectGlobal = document.getElementById('select-bu-global');
+  const selectHeader = document.getElementById('select-bu-header');
+  if (selectGlobal) selectGlobal.value = val;
+  if (selectHeader) selectHeader.value = val;
+
   await loadServices();
   await loadMachines();
   updateFilterDisplay();
