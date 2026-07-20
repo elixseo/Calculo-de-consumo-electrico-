@@ -581,10 +581,13 @@ app.put('/api/consumo/:id', authenticate, async (req, res) => {
       return res.status(400).json({ error: `Este servicio fue cerrado para auditoría el ${new Date(cierre.fecha_cierre).toLocaleDateString('es-AR')}. No se puede modificar.` });
     }
 
+    const potencia_val = parseFloat(potencia);
+    const hs_dia_val = parseFloat(hs_dia);
+    const calculo_val = potencia_val * hs_dia_val;
+
     await dbRun('BEGIN TRANSACTION');
-    await dbRun('UPDATE maquinas_potencia SET potencia = ? WHERE nro_maquina = ?', [parseFloat(potencia), current.nro_maquina]);
-    await dbRun('UPDATE inventario_mensual SET hs_dia = ?, calculo = ? * ? WHERE id = ?', [parseFloat(hs_dia), parseFloat(potencia), parseFloat(hs_dia), id]);
-    await dbRun('UPDATE inventario_mensual SET calculo = ? * hs_dia WHERE nro_maquina = ?', [parseFloat(potencia), current.nro_maquina]);
+    await dbRun('UPDATE maquinas_potencia SET potencia = ? WHERE nro_maquina = ?', [potencia_val, current.nro_maquina]);
+    await dbRun('UPDATE inventario_mensual SET hs_dia = ?, calculo = ? WHERE id = ?', [hs_dia_val, calculo_val, id]);
     await dbRun('COMMIT');
 
     const updatedRow = await dbGet(`
@@ -627,8 +630,9 @@ app.post('/api/horas', authenticate, async (req, res) => {
     for (const item of items) {
       const row = await dbGet('SELECT p.potencia FROM inventario_mensual i JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina WHERE i.id = ?', [item.id]);
       if (row) {
-        const hs = parseFloat(item.hs_dia) || 0;
-        await dbRun('UPDATE inventario_mensual SET hs_dia = ?, calculo = ? * ? WHERE id = ?', [hs, row.potencia, hs, item.id]);
+        const hs_dia_val = parseFloat(item.hs_dia) || 0;
+        const calculo_val = row.potencia * hs_dia_val;
+        await dbRun('UPDATE inventario_mensual SET hs_dia = ?, calculo = ? WHERE id = ?', [hs_dia_val, calculo_val, item.id]);
       }
     }
     await dbRun('COMMIT');
