@@ -384,7 +384,8 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
     const [year, monthStr] = mes.split('-');
     const daysInMonth = new Date(parseInt(year), parseInt(monthStr), 0).getDate();
 
-    let filterSql = 'WHERE i.mes = ?';
+    // Solo computar máquinas con potencia > 0 (las sin potencia no se cuentan)
+    let filterSql = 'WHERE i.mes = ? AND p.potencia > 0';
     let params = [mes];
 
     if (unidad) { filterSql += ' AND i.unidad_negocio = ?'; params.push(unidad); }
@@ -432,20 +433,21 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
         return { mes: r.mes, [serviceLabel]: r.total * d };
       });
     } else {
-      let trendFilterSql = '';
+      // Solo computar máquinas con potencia > 0
+      let trendFilterSql = 'WHERE p.potencia > 0';
       let trendParams = [];
       if (req.user.role === 'usuario') {
         const assigned = await dbAll('SELECT nro_casa FROM usuario_servicios WHERE usuario_id = ?', [req.user.userId]);
         const casas = assigned.map(r => r.nro_casa);
         if (casas.length > 0) {
-          trendFilterSql = `WHERE i.nro_casa IN (${casas.map(() => '?').join(',')})`;
+          trendFilterSql += ` AND i.nro_casa IN (${casas.map(() => '?').join(',')})`;
           trendParams.push(...casas);
         } else {
           trendFilterSql = 'WHERE 1=0';
         }
       } else if (unidad) {
         // Filter trend by selected business unit
-        trendFilterSql = 'WHERE i.unidad_negocio = ?';
+        trendFilterSql += ' AND i.unidad_negocio = ?';
         trendParams.push(unidad);
       }
 
@@ -519,12 +521,13 @@ app.get('/api/consumo', authenticate, async (req, res) => {
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   try {
+    // Solo computar máquinas con potencia > 0 (las sin potencia no se cuentan)
     let countSql = `
       SELECT COUNT(*) as total
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       JOIN servicios_casas s ON i.nro_casa = s.nro_casa
-      WHERE i.mes = ?
+      WHERE i.mes = ? AND p.potencia > 0
     `;
     let querySql = `
       SELECT i.id, i.mes, i.nro_maquina, p.maquina, p.marca, p.modelo,
@@ -533,7 +536,7 @@ app.get('/api/consumo', authenticate, async (req, res) => {
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       JOIN servicios_casas s ON i.nro_casa = s.nro_casa
-      WHERE i.mes = ?
+      WHERE i.mes = ? AND p.potencia > 0
     `;
 
     const params = [mes];
