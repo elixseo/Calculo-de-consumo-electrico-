@@ -246,40 +246,35 @@ async function loadMonths() {
     if (!response.ok) throw new Error('Error al cargar los períodos.');
     const months = await response.json();
 
-    const selectGlobal = document.getElementById('select-month-global');
     const selectHeader = document.getElementById('select-month-header');
     const selectImportMonth = document.getElementById('import-month');
     const selectImportYear = document.getElementById('import-year');
 
-    selectGlobal.innerHTML = '';
     if (selectHeader) selectHeader.innerHTML = '';
 
     if (months.length > 0) {
       months.forEach(m => {
-        const option = document.createElement('option');
-        option.value = m;
-        const [year, month] = m.split('-');
-        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        option.textContent = `${monthNames[parseInt(month) - 1]} ${year}`;
-        selectGlobal.appendChild(option);
-
-        // Also add to header selector
         if (selectHeader) {
-          const headerOption = option.cloneNode(true);
-          selectHeader.appendChild(headerOption);
+          const option = document.createElement('option');
+          option.value = m;
+          const [year, month] = m.split('-');
+          const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+          option.textContent = `${monthNames[parseInt(month) - 1]} ${year}`;
+          selectHeader.appendChild(option);
         }
       });
       if (!state.selectedMonth) state.selectedMonth = months[0];
-      selectGlobal.value = state.selectedMonth;
       if (selectHeader) selectHeader.value = state.selectedMonth;
       const [currYear, currMonth] = state.selectedMonth.split('-');
       if (selectImportYear) selectImportYear.value = currYear;
       if (selectImportMonth) selectImportMonth.value = currMonth;
     } else {
-      const option = document.createElement('option');
-      option.value = '';
-      option.textContent = 'Sin datos';
-      selectGlobal.appendChild(option);
+      if (selectHeader) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Sin datos';
+        selectHeader.appendChild(option);
+      }
     }
   } catch (error) {
     showToast('Error', 'error', error.message);
@@ -339,10 +334,8 @@ async function onPeriodChange(val) {
   state.selectedMachine = '';
   state.currentPage = 1;
 
-  // Sync both selectors
-  const selectGlobal = document.getElementById('select-month-global');
+  // Sync header selector
   const selectHeader = document.getElementById('select-month-header');
-  if (selectGlobal) selectGlobal.value = val;
   if (selectHeader) selectHeader.value = val;
 
   await loadServices();
@@ -357,10 +350,8 @@ async function onBUChange(val) {
   state.selectedMachine = '';
   state.currentPage = 1;
 
-  // Sync both selectors
-  const selectGlobal = document.getElementById('select-bu-global');
+  // Sync header selector
   const selectHeader = document.getElementById('select-bu-header');
-  if (selectGlobal) selectGlobal.value = val;
   if (selectHeader) selectHeader.value = val;
 
   await loadServices();
@@ -801,8 +792,9 @@ async function handleImport(event) {
     clearSelectedFile();
     await loadMonths(); // Reload months dropdown in case new months were added
     state.selectedMonth = targetPeriod;
-    document.getElementById('select-month-global').value = state.selectedMonth;
-    
+    const selectHeader = document.getElementById('select-month-header');
+    if (selectHeader) selectHeader.value = state.selectedMonth;
+
     // Switch to dashboard
     switchTab('dashboard');
   } catch (error) {
@@ -872,8 +864,10 @@ async function deleteMonthData(mes) {
     
     await loadMonths(); // Reload months dropdown
     if (state.selectedMonth === mes) {
-      const selectGlobal = document.getElementById('select-month-global');
-      state.selectedMonth = selectGlobal.value; // set to next available
+      const selectHeader = document.getElementById('select-month-header');
+      if (selectHeader) {
+        state.selectedMonth = selectHeader.value; // set to next available
+      }
     }
     
     // Refresh active view
@@ -1800,16 +1794,16 @@ window.switchTab = function(tabName) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function updateFilterDisplay() {
-  // Update Período
-  const selectMonth = document.getElementById('select-month-global');
+  // Update Período (from header selector)
+  const selectMonth = document.getElementById('select-month-header');
   const displayPeriodo = document.getElementById('display-periodo');
   if (selectMonth && displayPeriodo) {
     const selectedOption = selectMonth.options[selectMonth.selectedIndex];
     displayPeriodo.textContent = selectedOption?.text || 'Sin período';
   }
 
-  // Update Unidad
-  const selectBU = document.getElementById('select-bu-global');
+  // Update Unidad (from header selector)
+  const selectBU = document.getElementById('select-bu-header');
   const displayUnidad = document.getElementById('display-unidad');
   if (selectBU && displayUnidad) {
     const selectedOption = selectBU.options[selectBU.selectedIndex];
