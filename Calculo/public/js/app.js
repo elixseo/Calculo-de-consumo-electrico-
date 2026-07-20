@@ -150,6 +150,7 @@ async function initApp() {
   await loadMonths();
   if (state.selectedMonth) {
     await loadServices();
+    await loadMachines();
     await loadConfigServices();
     updateFilterDisplay();
     refreshData();
