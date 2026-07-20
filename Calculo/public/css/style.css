@@ -2111,29 +2111,13 @@ tbody tr:hover {
   overflow-wrap: break-word;
 }
 
+/* Nombres largos: usa el tooltip nativo del navegador (atributo title),
+   que se posiciona solo y no se encima con otras celdas. */
 .long-text-tooltip {
-  position: relative;
   cursor: help;
-  border-bottom: 1px dotted var(--text-dim);
-}
-
-.long-text-tooltip:hover::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  background: var(--input-bg);
-  color: var(--text-main);
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  white-space: normal;
-  width: max-content;
-  max-width: 400px;
-  z-index: 1000;
-  font-size: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Tabla de cálculos - Nombres de servicio y máquina */
@@ -2155,17 +2139,21 @@ tbody tr:hover {
 /* Servicio (Nombre Servicio) - Columna 1 */
 #data-table th:nth-child(1),
 #data-table td:nth-child(1) {
-  min-width: 280px;
-  max-width: none;
-  word-break: break-word;
+  min-width: 240px;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Máquina (Nombre) - Columna 4 */
 #data-table th:nth-child(4),
 #data-table td:nth-child(4) {
-  min-width: 220px;
-  max-width: none;
-  word-break: break-word;
+  min-width: 180px;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Marca - Columna 5 */
