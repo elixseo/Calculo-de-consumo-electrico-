@@ -712,7 +712,7 @@ function renderTable(rows) {
   tbody.innerHTML = '';
 
   if (filteredRows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-dim); padding: 40px;">No se encontraron registros.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-dim); padding: 40px;">No se encontraron registros.</td></tr>`;
     return;
   }
 
@@ -749,11 +749,6 @@ function renderTable(rows) {
       <td style="text-align: right;">${row.hs_dia.toFixed(2)}</td>
       <td style="text-align: right; font-weight: 600;">${row.calculo.toFixed(1)}</td>
       <td style="text-align: right; font-weight: 600; color: var(--cyan);">${consumoMes.toFixed(2)}</td>
-      <td class="actions-col">
-        <button class="btn-icon" onclick="openEditModal(${row.id})" title="Editar potencia y horas">
-          <i class="fa-regular fa-pen-to-square"></i>
-        </button>
-      </td>
     `;
     tbody.appendChild(tr);
   });
