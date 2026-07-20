@@ -703,6 +703,27 @@ body.dark-theme {
   width: 100%;
 }
 
+/* Contenedor con scroll vertical para el grafico de tipos de maquina (52 barras) */
+.chart-scroll-container {
+  position: relative;
+  width: 100%;
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.chart-scroll-container .chart-inner {
+  position: relative;
+  width: 100%;
+  /* la altura se define dinamicamente por JS segun la cantidad de barras */
+}
+
+.chart-scroll-container::-webkit-scrollbar { width: 8px; }
+.chart-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
 /* --- DATA TABLE CARD --- */
 .table-card {
   background-color: var(--bg-card);

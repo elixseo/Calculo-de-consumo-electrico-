@@ -248,21 +248,25 @@
           </div>
         </div>
 
-        <div class="charts-row grid-2">
-          <!-- Top Machines Chart -->
-          <div class="chart-card">
+        <!-- Machines Chart (full width, scrollable) -->
+        <div class="charts-row">
+          <div class="chart-card card-full">
             <div class="card-header">
-              <h3><i class="fa-solid fa-circle-notch"></i> Consumo por Tipo de Maquinaria (Eléctricas)</h3>
+              <h3><i class="fa-solid fa-chart-bar"></i> Consumo por Tipo de Maquinaria (Eléctricas)</h3>
             </div>
             <div class="card-body">
-              <div class="chart-container-donut">
-                <canvas id="chart-machines"></canvas>
+              <div class="chart-scroll-container">
+                <div class="chart-inner" id="chart-machines-inner">
+                  <canvas id="chart-machines"></canvas>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Top Services Chart -->
-          <div class="chart-card">
+        <!-- Services Chart (full width) -->
+        <div class="charts-row">
+          <div class="chart-card card-full">
             <div class="card-header">
               <h3><i class="fa-solid fa-chart-column"></i> <span id="chart-services-title">Consumo por Servicio / Cliente (Top 8)</span></h3>
             </div>

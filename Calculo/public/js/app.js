@@ -1187,58 +1187,67 @@ function renderTrendChart(data) {
 }
 
 function renderMachinesChart(data) {
-  const ctx = document.getElementById('chart-machines').getContext('2d');
-  
+  const canvas = document.getElementById('chart-machines');
+  const ctx = canvas.getContext('2d');
+
   if (state.charts.machines) {
     state.charts.machines.destroy();
   }
-  
+
   if (data.length === 0) {
-    // Show placeholder in chart container
     return;
   }
-  
+
   const labels = data.map(d => d.name);
   const values = data.map(d => d.value);
-  
-  // Custom HSL gradients
-  const colors = [
-    '#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', 
-    '#f97316', '#eab308', '#ec4899', '#6366f1'
-  ];
-  
+
+  // Un color distinto por barra (rueda HSL) para diferenciar todos los tipos
+  const barColors = data.map((_, i) => `hsl(${Math.round((i * 360) / data.length)}, 65%, 55%)`);
+
+  // Altura dinámica: ~26px por barra, para que se vean todos los tipos
+  const alturaPorBarra = 26;
+  const alturaMinima = 300;
+  const alturaCanvas = Math.max(alturaMinima, data.length * alturaPorBarra + 40);
+  const contenedor = canvas.parentElement;
+  if (contenedor) contenedor.style.height = alturaCanvas + 'px';
+
   state.charts.machines = new Chart(ctx, {
-    type: 'doughnut',
+    type: 'bar',
     data: {
       labels: labels,
       datasets: [{
+        label: 'Consumo (kWh/mes)',
         data: values,
-        backgroundColor: colors.slice(0, data.length),
-        borderWidth: 2,
-        borderColor: '#161b2e'
+        backgroundColor: barColors,
+        borderWidth: 0,
+        borderRadius: 4
       }]
     },
     options: {
+      indexAxis: 'y', // barras horizontales
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'right',
-          labels: {
-            color: '#f3f4f6',
-            boxWidth: 12,
-            font: { family: 'Inter', size: 11 }
-          }
-        },
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: function(context) {
-              return ` ${context.label}: ${context.raw.toFixed(1)} kWh (${context.parsed.toFixed(1)}%)`;
+              return ` ${context.raw.toFixed(1)} kWh/mes`;
             }
           }
         }
       },
-      cutout: '65%'
+      scales: {
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#9ca3af', font: { family: 'Inter' } },
+          title: { display: true, text: 'Consumo (kWh/mes)', color: '#9ca3af' }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#f3f4f6', font: { family: 'Inter', size: 11 }, autoSkip: false }
+        }
+      }
     }
   });
 }
