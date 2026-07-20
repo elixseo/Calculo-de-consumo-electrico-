@@ -1577,6 +1577,7 @@ async function fetchHorasAccordion() {
       item.innerHTML = `
         <div class="accordion-header" onclick="toggleAccordion(${svc.nro_casa})">
           <i class="fa-solid fa-building" style="color:var(--primary); font-size:14px;"></i>
+          <span class="acc-casa-badge">N° ${svc.nro_casa}</span>
           <span class="acc-name">${svc.nombre_servicio || `Casa ${svc.nro_casa}`}</span>
           ${isClosed
             ? `<span class="closed-badge"><i class="fa-solid fa-lock"></i> Cerrado ${new Date(cierre.fecha_cierre).toLocaleDateString('es-AR')}</span>
