@@ -151,6 +151,7 @@ async function initApp() {
   if (state.selectedMonth) {
     await loadServices();
     await loadConfigServices();
+    updateFilterDisplay();
     refreshData();
   } else {
     switchTab('import');
@@ -330,6 +331,7 @@ async function onPeriodChange(val) {
   state.currentPage = 1;
   await loadServices();
   await loadMachines();
+  updateFilterDisplay();
   refreshData();
 }
 
@@ -340,6 +342,7 @@ async function onBUChange(val) {
   state.currentPage = 1;
   await loadServices();
   await loadMachines();
+  updateFilterDisplay();
   refreshData();
 }
 
@@ -1768,3 +1771,25 @@ window.switchTab = function(tabName) {
     loadAuditLog();
   }
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTER DISPLAY UPDATE
+// ═══════════════════════════════════════════════════════════════════════════
+
+function updateFilterDisplay() {
+  // Update Período
+  const selectMonth = document.getElementById('select-month-global');
+  const displayPeriodo = document.getElementById('display-periodo');
+  if (selectMonth && displayPeriodo) {
+    const selectedOption = selectMonth.options[selectMonth.selectedIndex];
+    displayPeriodo.textContent = selectedOption?.text || 'Sin período';
+  }
+
+  // Update Unidad
+  const selectBU = document.getElementById('select-bu-global');
+  const displayUnidad = document.getElementById('display-unidad');
+  if (selectBU && displayUnidad) {
+    const selectedOption = selectBU.options[selectBU.selectedIndex];
+    displayUnidad.textContent = selectedOption?.text || 'Todas las Unidades';
+  }
+}

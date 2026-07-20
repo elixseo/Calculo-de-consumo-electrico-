@@ -249,6 +249,39 @@ body.dark-theme {
   align-items: center;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 24px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+/* Active Filters Display */
+.active-filters-display {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  border-radius: 8px;
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.filter-badge i {
+  font-size: 14px;
+}
+
+.filter-badge span {
+  color: var(--text-main);
+  font-weight: 600;
 }
 
 .header-title h1 {
