@@ -698,6 +698,13 @@ function filterRowsByExcludedServices(rows) {
   );
 }
 
+// Días del mes seleccionado (formato YYYY-MM)
+function getDiasDelMes(mes) {
+  if (!mes) return 30;
+  const [year, month] = mes.split('-');
+  return new Date(parseInt(year), parseInt(month), 0).getDate();
+}
+
 // Render Table Rows
 function renderTable(rows) {
   const filteredRows = filterRowsByExcludedServices(rows);
@@ -705,9 +712,11 @@ function renderTable(rows) {
   tbody.innerHTML = '';
 
   if (filteredRows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-dim); padding: 40px;">No se encontraron registros.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-dim); padding: 40px;">No se encontraron registros.</td></tr>`;
     return;
   }
+
+  const diasDelMes = getDiasDelMes(state.selectedMonth);
 
   filteredRows.forEach(row => {
     const tr = document.createElement('tr');
@@ -725,6 +734,9 @@ function renderTable(rows) {
     const servicioDisplay = servicioNombre.length > 40 ? `${servicioNombre.substring(0, 40)}...` : servicioNombre;
     const maquinaDisplay = maquinaNombre.length > 30 ? `${maquinaNombre.substring(0, 30)}...` : maquinaNombre;
 
+    // Consumo mensual en kWh = (Wh/día × días del mes) / 1000
+    const consumoMes = (row.calculo * diasDelMes) / 1000;
+
     tr.innerHTML = `
       <td title="${servicioNombre}" class="long-text-tooltip" data-tooltip="${servicioNombre}">${servicioDisplay}</td>
       <td>${row.nro_casa}</td>
@@ -736,6 +748,7 @@ function renderTable(rows) {
       <td style="text-align: right;">${row.potencia.toFixed(1)}</td>
       <td style="text-align: right;">${row.hs_dia.toFixed(2)}</td>
       <td style="text-align: right; font-weight: 600;">${row.calculo.toFixed(1)}</td>
+      <td style="text-align: right; font-weight: 600; color: var(--cyan);">${consumoMes.toFixed(2)}</td>
       <td class="actions-col">
         <button class="btn-icon" onclick="openEditModal(${row.id})" title="Editar potencia y horas">
           <i class="fa-regular fa-pen-to-square"></i>
@@ -1052,12 +1065,15 @@ async function exportDataToCSV() {
     
     // Build CSV Content
     // Columns: Servicio, N° Casa, N° Máquina, Máquina, Marca, Modelo, Fecha Ingreso, Potencia (W), Hs/Día, Cálculo (Wh)
-    const headers = ['Nombre Servicio', 'Nro Casa', 'Nro Maquina', 'Maquina', 'Marca', 'Modelo', 'Fecha Incorporacion', 'Potencia (W)', 'Hs/Dia', 'Calculo (Wh/Dia)', 'Unidad Negocio'];
+    const headers = ['Nombre Servicio', 'Nro Casa', 'Nro Maquina', 'Maquina', 'Marca', 'Modelo', 'Fecha Incorporacion', 'Potencia (W)', 'Hs/Dia', 'Calculo (Wh/Dia)', 'Consumo (kWh/Mes)', 'Unidad Negocio'];
+
+    const diasDelMesExport = getDiasDelMes(state.selectedMonth);
     
     let csvContent = '\uFEFF'; // UTF-8 BOM to display accented letters correctly in Excel
     csvContent += headers.join(';') + '\r\n'; // Excel uses semicolon in Spanish locales
     
     data.rows.forEach(row => {
+      const consumoMes = (row.calculo * diasDelMesExport) / 1000;
       const line = [
         `"${(row.nombre_servicio || '').replace(/"/g, '""')}"`,
         row.nro_casa,
@@ -1069,6 +1085,7 @@ async function exportDataToCSV() {
         row.potencia,
         row.hs_dia,
         row.calculo,
+        consumoMes.toFixed(2),
         `"${row.unidad_negocio}"`
       ];
       csvContent += line.join(';') + '\r\n';
