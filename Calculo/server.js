@@ -474,12 +474,13 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
       });
     }
 
+    // Todos los tipos de máquina eléctrica (sin límite), ordenados por consumo
     const machinesQuery = await dbAll(`
       SELECT p.maquina AS name, (SUM(i.calculo) / 1000.0) * ? AS value
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       ${filterSql}
-      GROUP BY p.maquina ORDER BY value DESC LIMIT 8
+      GROUP BY p.maquina HAVING value > 0 ORDER BY value DESC
     `, [daysInMonth, ...params]);
 
     let servicesQuery;
