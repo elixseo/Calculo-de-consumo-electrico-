@@ -365,28 +365,44 @@ async function loadServices() {
   try {
     let url = `${API_BASE}/servicios?mes=${state.selectedMonth}`;
     if (state.selectedBU) url += `&unidad=${encodeURIComponent(state.selectedBU)}`;
-    
+
     const response = await fetch(url, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Error al cargar la lista de servicios.');
     const services = await response.json();
-    
-    const select = document.getElementById('select-service-global');
-    select.innerHTML = '<option value="">Todos los Servicios</option>';
-    
-    services.forEach(s => {
-      const option = document.createElement('option');
-      option.value = s.nro_casa;
-      option.textContent = s.nombre_servicio || `Servicio Casa ${s.nro_casa}`;
-      select.appendChild(option);
-    });
-    
+
+    // Update both sidebar and panel selectors
+    const selectGlobal = document.getElementById('select-service-global');
+    const selectPanel = document.getElementById('select-service-panel');
+
+    if (selectGlobal) {
+      selectGlobal.innerHTML = '<option value="">Todos los Servicios</option>';
+      services.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s.nro_casa;
+        option.textContent = s.nombre_servicio || `Servicio Casa ${s.nro_casa}`;
+        selectGlobal.appendChild(option);
+      });
+    }
+
+    if (selectPanel) {
+      selectPanel.innerHTML = '<option value="">Todos los Servicios</option>';
+      services.forEach(s => {
+        const option = document.createElement('option');
+        option.value = s.nro_casa;
+        option.textContent = s.nombre_servicio || `Servicio Casa ${s.nro_casa}`;
+        selectPanel.appendChild(option);
+      });
+    }
+
     // Maintain selection if still available
     const stillExists = services.some(s => String(s.nro_casa) === String(state.selectedService));
     if (stillExists) {
-      select.value = state.selectedService;
+      if (selectGlobal) selectGlobal.value = state.selectedService;
+      if (selectPanel) selectPanel.value = state.selectedService;
     } else {
       state.selectedService = '';
-      select.value = '';
+      if (selectGlobal) selectGlobal.value = '';
+      if (selectPanel) selectPanel.value = '';
     }
   } catch (error) {
     console.error('Error loading services:', error);
@@ -424,27 +440,44 @@ async function loadMachines() {
       }
     });
 
-    const select = document.getElementById('select-machine-global');
-    select.innerHTML = '<option value="">Todas las Máquinas</option>';
+    // Update both sidebar and panel selectors
+    const selectGlobal = document.getElementById('select-machine-global');
+    const selectPanel = document.getElementById('select-machine-panel');
 
-    Array.from(machineMap.values())
-      .sort((a, b) => a.maquina.localeCompare(b.maquina))
-      .forEach(m => {
+    const machines = Array.from(machineMap.values())
+      .sort((a, b) => a.maquina.localeCompare(b.maquina));
+
+    if (selectGlobal) {
+      selectGlobal.innerHTML = '<option value="">Todas las Máquinas</option>';
+      machines.forEach(m => {
         const option = document.createElement('option');
         option.value = m.nro_maquina;
         option.textContent = `${m.maquina} (N° ${m.nro_maquina})`;
-        select.appendChild(option);
+        selectGlobal.appendChild(option);
       });
+    }
+
+    if (selectPanel) {
+      selectPanel.innerHTML = '<option value="">Todas las Máquinas</option>';
+      machines.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.nro_maquina;
+        option.textContent = `${m.maquina} (N° ${m.nro_maquina})`;
+        selectPanel.appendChild(option);
+      });
+    }
 
     // Maintain selection if still available
     const stillExists = Array.from(machineMap.keys()).some(key =>
       key.startsWith(state.selectedMachine + '-')
     );
     if (stillExists && state.selectedMachine) {
-      select.value = state.selectedMachine;
+      if (selectGlobal) selectGlobal.value = state.selectedMachine;
+      if (selectPanel) selectPanel.value = state.selectedMachine;
     } else {
       state.selectedMachine = '';
-      select.value = '';
+      if (selectGlobal) selectGlobal.value = '';
+      if (selectPanel) selectPanel.value = '';
     }
   } catch (error) {
     console.error('Error loading machines:', error);

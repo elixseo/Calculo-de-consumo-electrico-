@@ -539,6 +539,98 @@ body.dark-theme {
   font-weight: 700;
 }
 
+/* --- FILTER SECTION --- */
+.filter-section {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.filter-section-header {
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+}
+
+.filter-section-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.filter-section-header h3 i {
+  color: var(--cyan);
+  font-size: 18px;
+}
+
+.filter-section-header p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.filter-section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label i {
+  font-size: 14px;
+  color: var(--cyan);
+}
+
+.filter-group select {
+  padding: 12px 14px;
+  background: #1a1f35;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-group select:hover {
+  border-color: var(--cyan);
+  background: #212a45;
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.filter-group select option {
+  background-color: #1a1f35;
+  color: #f3f4f6;
+  padding: 8px 10px;
+}
+
 /* --- CHART CARDS --- */
 .charts-row {
   display: flex;
