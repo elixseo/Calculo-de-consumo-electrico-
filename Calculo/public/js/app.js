@@ -344,6 +344,113 @@ function saveConfigMachines() {
   refreshData();
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// ACTUALIZAR DATOS: subir potencia y horas desde Excel
+// ═══════════════════════════════════════════════════════════════════════════
+
+let potenciaFile = null;
+let horasFile = null;
+
+// Llena el selector de mes del panel Actualizar Datos
+async function loadHorasMesSelect() {
+  const sel = document.getElementById('horas-mes-select');
+  if (!sel) return;
+  try {
+    const response = await fetch(`${API_BASE}/meses`, { headers: getAuthHeaders() });
+    const months = await response.json();
+    sel.innerHTML = '';
+    const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    months.forEach(m => {
+      const [y, mo] = m.split('-');
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = `${monthNames[parseInt(mo) - 1]} ${y}`;
+      sel.appendChild(opt);
+    });
+    if (state.selectedMonth) sel.value = state.selectedMonth;
+  } catch (e) {
+    console.error('Error cargando meses:', e);
+  }
+}
+
+function onPotenciaFile(input) {
+  potenciaFile = input.files[0] || null;
+  document.getElementById('potencia-filename').textContent = potenciaFile ? potenciaFile.name : 'Hacé clic para elegir el archivo de Potencia';
+  document.getElementById('btn-subir-potencia').disabled = !potenciaFile;
+}
+
+function onHorasFile(input) {
+  horasFile = input.files[0] || null;
+  document.getElementById('horas-filename').textContent = horasFile ? horasFile.name : 'Hacé clic para elegir el archivo de Horas';
+  document.getElementById('btn-subir-horas').disabled = !horasFile;
+}
+
+async function subirPotencia() {
+  if (!potenciaFile) return;
+  const btn = document.getElementById('btn-subir-potencia');
+  const result = document.getElementById('potencia-result');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+  result.innerHTML = '';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', potenciaFile);
+    const response = await fetch(`${API_BASE}/import/potencia`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${state.token}` },
+      body: formData
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Error al actualizar potencia.');
+
+    result.innerHTML = `<div class="update-ok"><i class="fa-solid fa-circle-check"></i> ${data.message} (hoja: ${data.hoja})</div>`;
+    showToast('Potencia actualizada', 'success', data.message);
+    if (state.selectedMonth) refreshData();
+  } catch (err) {
+    result.innerHTML = `<div class="update-err"><i class="fa-solid fa-circle-exclamation"></i> ${err.message}</div>`;
+    showToast('Error', 'error', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Actualizar Potencia';
+  }
+}
+
+async function subirHoras() {
+  if (!horasFile) return;
+  const mes = document.getElementById('horas-mes-select').value;
+  if (!mes) { showToast('Falta período', 'warning', 'Seleccioná un período.'); return; }
+
+  const btn = document.getElementById('btn-subir-horas');
+  const result = document.getElementById('horas-result');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+  result.innerHTML = '';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', horasFile);
+    formData.append('mes', mes);
+    const response = await fetch(`${API_BASE}/import/horas`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${state.token}` },
+      body: formData
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Error al actualizar horas.');
+
+    result.innerHTML = `<div class="update-ok"><i class="fa-solid fa-circle-check"></i> ${data.message} (hoja: ${data.hoja})</div>`;
+    showToast('Horas actualizadas', 'success', data.message);
+    if (state.selectedMonth) refreshData();
+  } catch (err) {
+    result.innerHTML = `<div class="update-err"><i class="fa-solid fa-circle-exclamation"></i> ${err.message}</div>`;
+    showToast('Error', 'error', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Actualizar Horas';
+  }
+}
+
 
 // Load Months Dropdown (with auth header)
 async function loadMonths() {
@@ -429,6 +536,10 @@ function switchTab(tabName) {
     pageTitle.textContent = 'Gestión de Usuarios';
     pageSubtitle.textContent = 'Administre usuarios y asigne servicios a supervisores';
     fetchUsers();
+  } else if (tabName === 'actualizar') {
+    pageTitle.textContent = 'Actualizar Datos';
+    pageSubtitle.textContent = 'Actualice potencia y horas de las máquinas desde Excel';
+    loadHorasMesSelect();
   }
 }
 

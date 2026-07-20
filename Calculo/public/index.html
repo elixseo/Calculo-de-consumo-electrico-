@@ -74,6 +74,10 @@
           <i class="fa-solid fa-file-import"></i>
           <span>Importar Planilla</span>
         </a>
+        <a href="#" class="menu-item admin-only" id="btn-nav-actualizar" onclick="switchTab('actualizar')">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>Actualizar Datos</span>
+        </a>
         <a href="#" class="menu-item admin-only" id="btn-nav-users" onclick="switchTab('users')">
           <i class="fa-solid fa-users-gear"></i>
           <span>Gestión de Usuarios</span>
@@ -620,6 +624,59 @@
           <button class="btn btn-primary" onclick="saveConfigMachines()">
             <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración
           </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════ TAB: ACTUALIZAR DATOS -->
+  <section id="tab-actualizar" class="tab-panel">
+    <div class="update-grid">
+      <!-- Actualizar Potencia -->
+      <div class="config-card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-bolt"></i> Actualizar Potencia de Máquinas</h3>
+          <p style="font-size:13px; color:var(--text-muted); margin-top:8px;">
+            Subí un Excel con columnas <strong>"Nro Inventario"</strong> y <strong>"Potencia W"</strong>.
+            Actualiza la potencia de cada máquina y recalcula el consumo.
+          </p>
+        </div>
+        <div class="card-body">
+          <div class="upload-drop" id="drop-potencia" onclick="document.getElementById('file-potencia').click()">
+            <i class="fa-solid fa-file-arrow-up"></i>
+            <span id="potencia-filename">Hacé clic para elegir el archivo de Potencia</span>
+            <input type="file" id="file-potencia" accept=".xlsx,.xls" style="display:none" onchange="onPotenciaFile(this)">
+          </div>
+          <button class="btn btn-primary" id="btn-subir-potencia" onclick="subirPotencia()" disabled style="margin-top:16px; width:100%;">
+            <i class="fa-solid fa-arrows-rotate"></i> Actualizar Potencia
+          </button>
+          <div id="potencia-result" class="update-result"></div>
+        </div>
+      </div>
+
+      <!-- Actualizar Horas -->
+      <div class="config-card">
+        <div class="card-header">
+          <h3><i class="fa-regular fa-clock"></i> Actualizar Horas de Uso</h3>
+          <p style="font-size:13px; color:var(--text-muted); margin-top:8px;">
+            Subí un Excel con columnas <strong>"Nro Inventario"</strong> y <strong>"HS/DÍA"</strong>.
+            Actualiza las horas para el período seleccionado y recalcula el consumo.
+          </p>
+        </div>
+        <div class="card-body">
+          <div class="form-field" style="margin-bottom:16px;">
+            <label>Período a actualizar:</label>
+            <select id="horas-mes-select"></select>
+          </div>
+          <div class="upload-drop" id="drop-horas" onclick="document.getElementById('file-horas').click()">
+            <i class="fa-solid fa-file-arrow-up"></i>
+            <span id="horas-filename">Hacé clic para elegir el archivo de Horas</span>
+            <input type="file" id="file-horas" accept=".xlsx,.xls" style="display:none" onchange="onHorasFile(this)">
+          </div>
+          <button class="btn btn-primary" id="btn-subir-horas" onclick="subirHoras()" disabled style="margin-top:16px; width:100%;">
+            <i class="fa-solid fa-arrows-rotate"></i> Actualizar Horas
+          </button>
+          <div id="horas-result" class="update-result"></div>
         </div>
       </div>
     </div>

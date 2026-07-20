@@ -878,6 +878,109 @@ app.post('/api/import', authenticate, requireAdmin, uploadMemory.single('file'),
   }
 });
 
+// Helper: busca en todas las hojas del workbook la que tenga columnas
+// "Nro Inventario" + una columna de valor (potencia u horas), y devuelve el mapeo.
+function extraerMapeoInventario(workbook, valorRegex) {
+  for (const sn of workbook.SheetNames) {
+    const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sn]);
+    if (rows.length === 0) continue;
+    const keys = Object.keys(rows[0]);
+    const claveKey = keys.find(k => /nro\s*inventario/i.test(k));
+    const valorKey = keys.find(k => valorRegex.test(k));
+    if (claveKey && valorKey) {
+      const data = [];
+      rows.forEach(r => {
+        const nro = parseInt(r[claveKey]);
+        const val = parseFloat(r[valorKey]);
+        if (!isNaN(nro) && !isNaN(val)) data.push({ nro, val });
+      });
+      return { sheet: sn, data };
+    }
+  }
+  return null;
+}
+
+// POST /api/import/potencia - actualiza la potencia (W) de las máquinas desde Excel
+app.post('/api/import/potencia', authenticate, requireAdmin, uploadMemory.single('file'), async (req, res) => {
+  const file = req.file;
+  if (!file) return res.status(400).json({ error: 'Falta cargar el archivo Excel.' });
+
+  try {
+    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+    const mapeo = extraerMapeoInventario(workbook, /potencia/i);
+    if (!mapeo || mapeo.data.length === 0) {
+      return res.status(400).json({ error: 'No se encontró una hoja con columnas "Nro Inventario" y "Potencia W".' });
+    }
+
+    await dbRun('BEGIN TRANSACTION');
+    let actualizadas = 0;
+    for (const { nro, val } of mapeo.data) {
+      const r = await dbRun('UPDATE maquinas_potencia SET potencia = ? WHERE nro_maquina = ?', [val, nro]);
+      if (r.changes > 0) actualizadas++;
+    }
+
+    // Recalcular consumo (calculo = potencia × hs_dia) para todo el inventario
+    await dbRun(`
+      UPDATE inventario_mensual
+      SET calculo = hs_dia * (
+        SELECT p.potencia FROM maquinas_potencia p WHERE p.nro_maquina = inventario_mensual.nro_maquina
+      )
+    `);
+
+    await registrarCambio(req.user.userId, req.user.nombre, 'IMPORTACION', 'maquinas_potencia', null, '', actualizadas.toString(),
+      `Actualización de potencia de ${actualizadas} máquinas desde ${file.originalname}`);
+
+    await dbRun('COMMIT');
+    res.json({ success: true, actualizadas, total: mapeo.data.length, hoja: mapeo.sheet,
+      message: `Se actualizó la potencia de ${actualizadas} máquinas (de ${mapeo.data.length} en el archivo).` });
+  } catch (error) {
+    await dbRun('ROLLBACK');
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/import/horas - actualiza las Hs/Día de las máquinas para un mes, desde Excel
+app.post('/api/import/horas', authenticate, requireAdmin, uploadMemory.single('file'), async (req, res) => {
+  const { mes } = req.body;
+  const file = req.file;
+  if (!mes) return res.status(400).json({ error: 'Falta seleccionar el período (mes).' });
+  if (!file) return res.status(400).json({ error: 'Falta cargar el archivo Excel.' });
+
+  try {
+    const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+    const mapeo = extraerMapeoInventario(workbook, /hs|hora/i);
+    if (!mapeo || mapeo.data.length === 0) {
+      return res.status(400).json({ error: 'No se encontró una hoja con columnas "Nro Inventario" y "HS/DÍA".' });
+    }
+
+    await dbRun('BEGIN TRANSACTION');
+    let actualizadas = 0;
+    for (const { nro, val } of mapeo.data) {
+      const r = await dbRun('UPDATE inventario_mensual SET hs_dia = ? WHERE nro_maquina = ? AND mes = ?', [val, nro, mes]);
+      if (r.changes > 0) actualizadas++;
+    }
+
+    // Recalcular consumo del mes (calculo = potencia × hs_dia)
+    await dbRun(`
+      UPDATE inventario_mensual
+      SET calculo = hs_dia * (
+        SELECT p.potencia FROM maquinas_potencia p WHERE p.nro_maquina = inventario_mensual.nro_maquina
+      )
+      WHERE mes = ?
+    `, [mes]);
+
+    await registrarCambio(req.user.userId, req.user.nombre, 'IMPORTACION', 'inventario_mensual', null, '', actualizadas.toString(),
+      `Actualización de Hs/Día de ${actualizadas} máquinas para ${mes} desde ${file.originalname}`);
+
+    await dbRun('COMMIT');
+    res.json({ success: true, actualizadas, total: mapeo.data.length, hoja: mapeo.sheet,
+      message: `Se actualizaron las horas de ${actualizadas} máquinas para el período ${mes} (de ${mapeo.data.length} en el archivo).` });
+  } catch (error) {
+    await dbRun('ROLLBACK');
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/mes/:mes
 app.delete('/api/mes/:mes', authenticate, requireAdmin, async (req, res) => {
   const { mes } = req.params;
