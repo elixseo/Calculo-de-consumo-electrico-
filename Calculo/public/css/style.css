@@ -2549,3 +2549,86 @@ canvas {
 @media (max-width: 768px) {
   .update-grid { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   TRAZABILIDAD (documentacion in-app)
+═══════════════════════════════════════════════════════════════ */
+.info-doc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.info-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.info-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.info-card h3 i { color: var(--cyan); }
+
+.info-card p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.info-card strong { color: var(--text-main); }
+
+.info-path {
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--cyan);
+  font-weight: 600;
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+.info-formula {
+  background: rgba(59, 130, 246, 0.08);
+  border-left: 3px solid var(--primary);
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: var(--text-main);
+  font-size: 13px;
+  line-height: 1.8;
+  margin-bottom: 14px;
+  font-family: 'Inter', monospace;
+}
+
+.info-list, .info-steps {
+  margin: 8px 0 0 18px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.info-list li, .info-steps li { margin-bottom: 6px; }
+
+.info-example {
+  background: rgba(16, 185, 129, 0.08);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-top: 12px !important;
+  color: var(--text-main) !important;
+}
+
+@media (max-width: 900px) {
+  .info-doc { grid-template-columns: 1fr; }
+}

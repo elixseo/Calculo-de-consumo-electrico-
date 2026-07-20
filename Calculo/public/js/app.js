@@ -540,6 +540,9 @@ function switchTab(tabName) {
     pageTitle.textContent = 'Actualizar Datos';
     pageSubtitle.textContent = 'Actualice potencia y horas de las máquinas desde Excel';
     loadHorasMesSelect();
+  } else if (tabName === 'info') {
+    pageTitle.textContent = 'Trazabilidad';
+    pageSubtitle.textContent = 'Origen de los datos y metodología de cálculo del consumo';
   }
 }
 

@@ -90,6 +90,10 @@
           <i class="fa-solid fa-clipboard-list"></i>
           <span>Auditoría</span>
         </a>
+        <a href="#" class="menu-item" id="btn-nav-info" onclick="switchTab('info')">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Trazabilidad</span>
+        </a>
       </nav>
 
       <!-- Sidebar Filters - Service & Machine Only -->
@@ -679,6 +683,64 @@
           <div id="horas-result" class="update-result"></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════ TAB: TRAZABILIDAD -->
+  <section id="tab-info" class="tab-panel">
+    <div class="info-doc">
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-database"></i> Origen de los datos</h3>
+        <p>El inventario de máquinas se obtiene del sistema <strong>Admaquina</strong> en el servidor:</p>
+        <div class="info-path">Admaquina → Informes → Máquinas por N° de Inventario</div>
+        <p>Se solicita la <strong>Fecha de inventario a mes vencido</strong>. Ese informe genera el Excel (una fila por máquina y servicio) que luego se sube a la plataforma por <em>Importar Planilla</em>.</p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-calculator"></i> Cómo se calcula el consumo</h3>
+        <div class="info-formula">
+          Consumo diario (Wh/día) = Potencia (W) × Horas de uso por día (Hs/Día)<br>
+          Consumo mensual (kWh/mes) = (Wh/día × Días del mes) ÷ 1000
+        </div>
+        <ul class="info-list">
+          <li><strong>Potencia (W):</strong> valor de cada máquina en el inventario maestro.</li>
+          <li><strong>Hs/Día:</strong> horas de uso de esa máquina en ese servicio y mes.</li>
+          <li><strong>Días del mes:</strong> se calculan automáticamente según el período (ej. enero = 31).</li>
+          <li><strong>÷ 1000:</strong> convierte de Wh a kWh.</li>
+        </ul>
+        <p class="info-example"><strong>Ejemplo:</strong> Lustradora de 309,5 W usada 0,57 hs/día → 309,5 × 0,57 = <strong>176,4 Wh/día</strong> → × 31 días ÷ 1000 = <strong>5,47 kWh/mes</strong>.</p>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-ban"></i> Qué NO se computa</h3>
+        <ul class="info-list">
+          <li><strong>Máquinas sin potencia</strong> (potencia = 0): no se cuentan.</li>
+          <li><strong>Máquinas a combustible</strong> (nafta/diésel): todas las "A EXPLOSIÓN" y tractores/minitractores se excluyen porque no consumen electricidad.</li>
+          <li><strong>Servicios o máquinas destildados</strong> en el menú <em>Configuración</em>.</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-diagram-project"></i> Flujo de trabajo</h3>
+        <ol class="info-steps">
+          <li>Generar el informe en <strong>Admaquina</strong> (Máquinas por N° de Inventario, fecha a mes vencido).</li>
+          <li><strong>Importar Planilla</strong>: subir el Excel del mes.</li>
+          <li><strong>Actualizar Datos</strong>: ajustar potencias u horas si hace falta.</li>
+          <li><strong>Carga de Horas</strong>: completar/verificar horas por servicio y cerrar el período con foto de auditoría.</li>
+          <li><strong>Panel General</strong> y <strong>Cálculos Detallados</strong>: ver el consumo, gráficos y exportar.</li>
+        </ol>
+      </div>
+
+      <div class="info-card">
+        <h3><i class="fa-solid fa-shield-halved"></i> Trazabilidad y control</h3>
+        <ul class="info-list">
+          <li>Cada modificación (potencia, horas, importaciones, cierres) queda registrada en <strong>Auditoría</strong>: quién, qué y cuándo.</li>
+          <li>Los datos se filtran por <strong>Período</strong>, <strong>Unidad de Negocio</strong>, <strong>Servicio</strong> y <strong>Máquina</strong>.</li>
+          <li>El cierre de período permite adjuntar una <strong>foto de auditoría</strong> como constancia.</li>
+        </ul>
+      </div>
+
     </div>
   </section>
 
