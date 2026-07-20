@@ -15,6 +15,10 @@ const PORT = process.env.PORT || 3005;
 // Cubre: "... A EXPLOSION" y "TRACTOR"/"MINITRACTOR"/"P/TRACTOR".
 const EXCLUIR_COMBUSTIBLE = "AND p.maquina NOT LIKE '%EXPLOSION%' AND p.maquina NOT LIKE '%TRACTOR%'";
 
+// Días del mes de cada fila (según i.mes 'YYYY-MM'), calculado en SQL.
+// Sirve para acumular consumo mensual correctamente incluso sumando varios meses.
+const DIAS_MES_SQL = "CAST(strftime('%d', date(i.mes || '-01', '+1 month', '-1 day')) AS INTEGER)";
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'public', 'uploads', 'cierres');
 if (!fs.existsSync(uploadsDir)) {
@@ -386,12 +390,12 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
   if (!mes) return res.status(400).json({ error: 'El parámetro "mes" es requerido.' });
 
   try {
-    const [year, monthStr] = mes.split('-');
-    const daysInMonth = new Date(parseInt(year), parseInt(monthStr), 0).getDate();
+    const todos = (mes === 'todos');
 
     // Solo computar máquinas con potencia > 0 y que usen electricidad (no combustible)
-    let filterSql = `WHERE i.mes = ? AND p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}`;
-    let params = [mes];
+    let filterSql = `WHERE p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}`;
+    let params = [];
+    if (!todos) { filterSql += ' AND i.mes = ?'; params.push(mes); }
 
     if (unidad) { filterSql += ' AND i.unidad_negocio = ?'; params.push(unidad); }
     if (maquina) { filterSql += ' AND i.nro_maquina = ?'; params.push(parseInt(maquina)); }
@@ -410,17 +414,28 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
       params.push(parseInt(servicio));
     }
 
+    // Consumo mensual = SUM(calculo/1000 × días del mes de cada fila) → acumula todos los meses en "todos"
     const kpis = await dbGet(`
-      SELECT 
-        SUM(p.potencia) / 1000.0 AS totalPotenciaKw,
+      SELECT
         SUM(i.calculo) / 1000.0 AS totalConsumoDiaKwh,
-        (SUM(i.calculo) / 1000.0) * ? AS totalConsumoMesKwh,
+        SUM((i.calculo / 1000.0) * ${DIAS_MES_SQL}) AS totalConsumoMesKwh,
         COUNT(DISTINCT i.nro_maquina) AS cantMaquinas,
         COUNT(DISTINCT i.nro_casa) AS cantServicios
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       ${filterSql}
-    `, [daysInMonth, ...params]);
+    `, params);
+
+    // Potencia instalada: cada máquina cuenta una sola vez (distinct)
+    const potRow = await dbGet(`
+      SELECT SUM(potencia) / 1000.0 AS totalPotenciaKw FROM (
+        SELECT DISTINCT i.nro_maquina, p.potencia
+        FROM inventario_mensual i
+        JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
+        ${filterSql}
+      )
+    `, params);
+    if (kpis) kpis.totalPotenciaKw = potRow ? potRow.totalPotenciaKw : 0;
 
     let trend;
     if (servicio && req.user.role === 'admin') {
@@ -474,33 +489,35 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
       });
     }
 
-    // Todos los tipos de máquina eléctrica (sin límite), ordenados por consumo
+    // Todos los tipos de máquina eléctrica (sin límite), ordenados por consumo mensual
     const machinesQuery = await dbAll(`
-      SELECT p.maquina AS name, (SUM(i.calculo) / 1000.0) * ? AS value
+      SELECT p.maquina AS name, SUM((i.calculo / 1000.0) * ${DIAS_MES_SQL}) AS value
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       ${filterSql}
       GROUP BY p.maquina HAVING value > 0 ORDER BY value DESC
-    `, [daysInMonth, ...params]);
+    `, params);
 
     let servicesQuery;
     if (servicio && req.user.role === 'admin') {
-      servicesQuery = await dbAll(`
-        SELECT (p.maquina || ' (N° ' || i.nro_maquina || ')') AS name, (i.calculo / 1000.0) * ? AS value
+      let svcSql = `
+        SELECT (p.maquina || ' (N° ' || i.nro_maquina || ')') AS name, SUM((i.calculo / 1000.0) * ${DIAS_MES_SQL}) AS value
         FROM inventario_mensual i
         JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
-        WHERE i.mes = ? AND i.nro_casa = ?
-        ORDER BY value DESC LIMIT 8
-      `, [daysInMonth, mes, parseInt(servicio)]);
+        WHERE p.potencia > 0 ${EXCLUIR_COMBUSTIBLE} AND i.nro_casa = ?`;
+      const svcParams = [parseInt(servicio)];
+      if (!todos) { svcSql += ' AND i.mes = ?'; svcParams.push(mes); }
+      svcSql += ' GROUP BY i.nro_maquina HAVING value > 0 ORDER BY value DESC LIMIT 8';
+      servicesQuery = await dbAll(svcSql, svcParams);
     } else {
       servicesQuery = await dbAll(`
-        SELECT s.nombre_servicio AS name, (SUM(i.calculo) / 1000.0) * ? AS value
+        SELECT s.nombre_servicio AS name, SUM((i.calculo / 1000.0) * ${DIAS_MES_SQL}) AS value
         FROM inventario_mensual i
         JOIN servicios_casas s ON i.nro_casa = s.nro_casa
         JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
         ${filterSql}
         GROUP BY s.nombre_servicio ORDER BY value DESC LIMIT 8
-      `, [daysInMonth, ...params]);
+      `, params);
     }
 
     res.json({
@@ -528,13 +545,16 @@ app.get('/api/consumo', authenticate, async (req, res) => {
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   try {
+    const todos = (mes === 'todos');
+    const mesCond = todos ? '' : ' AND i.mes = ?';
+
     // Solo computar máquinas con potencia > 0 y que usen electricidad (no combustible)
     let countSql = `
       SELECT COUNT(*) as total
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       JOIN servicios_casas s ON i.nro_casa = s.nro_casa
-      WHERE i.mes = ? AND p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}
+      WHERE p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}${mesCond}
     `;
     let querySql = `
       SELECT i.id, i.mes, i.nro_maquina, p.maquina, p.marca, p.modelo,
@@ -543,10 +563,10 @@ app.get('/api/consumo', authenticate, async (req, res) => {
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       JOIN servicios_casas s ON i.nro_casa = s.nro_casa
-      WHERE i.mes = ? AND p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}
+      WHERE p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}${mesCond}
     `;
 
-    const params = [mes];
+    const params = todos ? [] : [mes];
 
     if (unidad) { countSql += ' AND i.unidad_negocio = ?'; querySql += ' AND i.unidad_negocio = ?'; params.push(unidad); }
     if (maquina) { countSql += ' AND i.nro_maquina = ?'; querySql += ' AND i.nro_maquina = ?'; params.push(parseInt(maquina)); }
@@ -572,7 +592,7 @@ app.get('/api/consumo', authenticate, async (req, res) => {
       params.push(sp, sp, sp, sp, sp, sp);
     }
 
-    querySql += ' ORDER BY s.nombre_servicio ASC, p.maquina ASC LIMIT ? OFFSET ?';
+    querySql += (todos ? ' ORDER BY i.mes ASC, s.nombre_servicio ASC, p.maquina ASC' : ' ORDER BY s.nombre_servicio ASC, p.maquina ASC') + ' LIMIT ? OFFSET ?';
     const queryParams = [...params, parseInt(limit), offset];
     const totalRes = await dbGet(countSql, params);
     const rows = await dbAll(querySql, queryParams);

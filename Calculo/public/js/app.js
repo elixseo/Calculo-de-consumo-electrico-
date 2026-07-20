@@ -466,6 +466,13 @@ async function loadMonths() {
     if (selectHeader) selectHeader.innerHTML = '';
 
     if (months.length > 0) {
+      // Opción para ver el consumo acumulado de todos los períodos
+      if (selectHeader) {
+        const optTodos = document.createElement('option');
+        optTodos.value = 'todos';
+        optTodos.textContent = 'Todos los períodos';
+        selectHeader.appendChild(optTodos);
+      }
       months.forEach(m => {
         if (selectHeader) {
           const option = document.createElement('option');
@@ -478,9 +485,11 @@ async function loadMonths() {
       });
       if (!state.selectedMonth) state.selectedMonth = months[0];
       if (selectHeader) selectHeader.value = state.selectedMonth;
-      const [currYear, currMonth] = state.selectedMonth.split('-');
-      if (selectImportYear) selectImportYear.value = currYear;
-      if (selectImportMonth) selectImportMonth.value = currMonth;
+      if (state.selectedMonth !== 'todos') {
+        const [currYear, currMonth] = state.selectedMonth.split('-');
+        if (selectImportYear) selectImportYear.value = currYear;
+        if (selectImportMonth) selectImportMonth.value = currMonth;
+      }
     } else {
       if (selectHeader) {
         const option = document.createElement('option');
@@ -583,8 +592,11 @@ async function onBUChange(val) {
 async function loadServices() {
   if (!state.selectedMonth) return;
   try {
-    let url = `${API_BASE}/servicios?mes=${state.selectedMonth}`;
-    if (state.selectedBU) url += `&unidad=${encodeURIComponent(state.selectedBU)}`;
+    // En "todos los períodos" no se filtra por mes (trae todos los servicios)
+    let url = state.selectedMonth === 'todos'
+      ? `${API_BASE}/servicios`
+      : `${API_BASE}/servicios?mes=${state.selectedMonth}`;
+    if (state.selectedBU) url += `${url.includes('?') ? '&' : '?'}unidad=${encodeURIComponent(state.selectedBU)}`;
 
     const response = await fetch(url, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Error al cargar la lista de servicios.');
@@ -812,9 +824,9 @@ function filterRowsByExcludedServices(rows) {
   );
 }
 
-// Días del mes seleccionado (formato YYYY-MM)
+// Días del mes (formato YYYY-MM). Para 'todos' se usa el mes de cada fila.
 function getDiasDelMes(mes) {
-  if (!mes) return 30;
+  if (!mes || mes === 'todos') return 30;
   const [year, month] = mes.split('-');
   return new Date(parseInt(year), parseInt(month), 0).getDate();
 }
@@ -829,8 +841,6 @@ function renderTable(rows) {
     tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-dim); padding: 40px;">No se encontraron registros.</td></tr>`;
     return;
   }
-
-  const diasDelMes = getDiasDelMes(state.selectedMonth);
 
   filteredRows.forEach(row => {
     const tr = document.createElement('tr');
@@ -848,8 +858,8 @@ function renderTable(rows) {
     const servicioDisplay = servicioNombre.length > 40 ? `${servicioNombre.substring(0, 40)}...` : servicioNombre;
     const maquinaDisplay = maquinaNombre.length > 30 ? `${maquinaNombre.substring(0, 30)}...` : maquinaNombre;
 
-    // Consumo mensual en kWh = (Wh/día × días del mes) / 1000
-    const consumoMes = (row.calculo * diasDelMes) / 1000;
+    // Consumo mensual en kWh = (Wh/día × días del mes de la fila) / 1000
+    const consumoMes = (row.calculo * getDiasDelMes(row.mes)) / 1000;
 
     tr.innerHTML = `
       <td title="${servicioNombre}" class="long-text-tooltip" data-tooltip="${servicioNombre}">${servicioDisplay}</td>
@@ -1176,13 +1186,11 @@ async function exportDataToCSV() {
     // Columns: Servicio, N° Casa, N° Máquina, Máquina, Marca, Modelo, Fecha Ingreso, Potencia (W), Hs/Día, Cálculo (Wh)
     const headers = ['Nombre Servicio', 'Nro Casa', 'Nro Maquina', 'Maquina', 'Marca', 'Modelo', 'Fecha Incorporacion', 'Potencia (W)', 'Hs/Dia', 'Calculo (Wh/Dia)', 'Consumo (kWh/Mes)', 'Unidad Negocio'];
 
-    const diasDelMesExport = getDiasDelMes(state.selectedMonth);
-    
     let csvContent = '\uFEFF'; // UTF-8 BOM to display accented letters correctly in Excel
     csvContent += headers.join(';') + '\r\n'; // Excel uses semicolon in Spanish locales
-    
+
     data.rows.forEach(row => {
-      const consumoMes = (row.calculo * diasDelMesExport) / 1000;
+      const consumoMes = (row.calculo * getDiasDelMes(row.mes)) / 1000;
       const line = [
         `"${(row.nombre_servicio || '').replace(/"/g, '""')}"`,
         row.nro_casa,
