@@ -501,13 +501,19 @@ async function fetchDashboard() {
     // Update chart card titles dynamically
     const trendTitle = document.getElementById('chart-trend-title');
     const servicesTitle = document.getElementById('chart-services-title');
-    
+
     if (state.selectedService) {
+      // If service is selected, show service-specific title
       const selectSvc = document.getElementById('select-service-global');
-      const svcName = selectSvc.options[selectSvc.selectedIndex]?.text || '';
+      const svcName = selectSvc?.options[selectSvc.selectedIndex]?.text || state.selectedService;
       trendTitle.textContent = `Histórico de Consumo del Servicio: ${svcName} (kWh / Mes)`;
       servicesTitle.textContent = `Consumo por Máquina en este Servicio (Top 8)`;
+    } else if (state.selectedBU) {
+      // If business unit is selected, show unit-specific title
+      trendTitle.textContent = `Histórico de Consumo - ${state.selectedBU} (kWh / Mes)`;
+      servicesTitle.textContent = `Consumo por Servicio / Cliente en ${state.selectedBU} (Top 8)`;
     } else {
+      // Default: show both units
       trendTitle.textContent = 'Histórico de Consumo por Unidad de Negocio (kWh / Mes)';
       servicesTitle.textContent = 'Consumo por Servicio / Cliente (Top 8)';
     }
