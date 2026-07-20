@@ -363,7 +363,7 @@ app.get('/api/servicios', authenticate, async (req, res) => {
 
 // GET /api/dashboard
 app.get('/api/dashboard', authenticate, async (req, res) => {
-  const { mes, unidad, servicio } = req.query;
+  const { mes, unidad, servicio, maquina } = req.query;
   if (!mes) return res.status(400).json({ error: 'El parámetro "mes" es requerido.' });
 
   try {
@@ -374,6 +374,7 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
     let params = [mes];
 
     if (unidad) { filterSql += ' AND i.unidad_negocio = ?'; params.push(unidad); }
+    if (maquina) { filterSql += ' AND i.nro_maquina = ?'; params.push(parseInt(maquina)); }
 
     // Restrict supervisors to their assigned services
     if (req.user.role === 'usuario') {
@@ -494,14 +495,14 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
 
 // GET /api/consumo
 app.get('/api/consumo', authenticate, async (req, res) => {
-  const { mes, unidad, servicio, search, page = 1, limit = 50 } = req.query;
+  const { mes, unidad, servicio, maquina, search, page = 1, limit = 50 } = req.query;
   if (!mes) return res.status(400).json({ error: 'El parámetro "mes" es requerido.' });
 
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   try {
     let countSql = `
-      SELECT COUNT(*) as total 
+      SELECT COUNT(*) as total
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       JOIN servicios_casas s ON i.nro_casa = s.nro_casa
@@ -520,6 +521,7 @@ app.get('/api/consumo', authenticate, async (req, res) => {
     const params = [mes];
 
     if (unidad) { countSql += ' AND i.unidad_negocio = ?'; querySql += ' AND i.unidad_negocio = ?'; params.push(unidad); }
+    if (maquina) { countSql += ' AND i.nro_maquina = ?'; querySql += ' AND i.nro_maquina = ?'; params.push(parseInt(maquina)); }
 
     if (req.user.role === 'usuario') {
       const assigned = await dbAll('SELECT nro_casa FROM usuario_servicios WHERE usuario_id = ?', [req.user.userId]);

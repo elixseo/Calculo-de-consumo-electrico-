@@ -3,6 +3,7 @@ const state = {
   selectedMonth: '',
   selectedBU: '',
   selectedService: '',
+  selectedMachine: '',
   searchText: '',
   currentPage: 1,
   limit: 50,
@@ -234,15 +235,21 @@ function switchTab(tabName) {
 async function onPeriodChange(val) {
   if (!val) return;
   state.selectedMonth = val;
+  state.selectedService = '';
+  state.selectedMachine = '';
   state.currentPage = 1;
   await loadServices();
+  await loadMachines();
   refreshData();
 }
 
 async function onBUChange(val) {
   state.selectedBU = val;
+  state.selectedService = '';
+  state.selectedMachine = '';
   state.currentPage = 1;
   await loadServices();
+  await loadMachines();
   refreshData();
 }
 
@@ -281,6 +288,64 @@ async function loadServices() {
 
 function onServiceChange(val) {
   state.selectedService = val;
+  state.selectedMachine = '';
+  state.currentPage = 1;
+  loadMachines();
+  refreshData();
+}
+
+async function loadMachines() {
+  if (!state.selectedMonth) return;
+  try {
+    let url = `${API_BASE}/consumo?mes=${state.selectedMonth}&limit=1000`;
+    if (state.selectedBU) url += `&unidad=${encodeURIComponent(state.selectedBU)}`;
+    if (state.selectedService) url += `&servicio=${state.selectedService}`;
+
+    const response = await fetch(url, { headers: getAuthHeaders() });
+    if (!response.ok) throw new Error('Error al cargar la lista de máquinas.');
+    const data = await response.json();
+
+    // Extract unique machines
+    const machineMap = new Map();
+    data.rows.forEach(row => {
+      const key = `${row.nro_maquina}-${row.maquina}`;
+      if (!machineMap.has(key)) {
+        machineMap.set(key, {
+          nro_maquina: row.nro_maquina,
+          maquina: row.maquina
+        });
+      }
+    });
+
+    const select = document.getElementById('select-machine-global');
+    select.innerHTML = '<option value="">Todas las Máquinas</option>';
+
+    Array.from(machineMap.values())
+      .sort((a, b) => a.maquina.localeCompare(b.maquina))
+      .forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.nro_maquina;
+        option.textContent = `${m.maquina} (N° ${m.nro_maquina})`;
+        select.appendChild(option);
+      });
+
+    // Maintain selection if still available
+    const stillExists = Array.from(machineMap.keys()).some(key =>
+      key.startsWith(state.selectedMachine + '-')
+    );
+    if (stillExists && state.selectedMachine) {
+      select.value = state.selectedMachine;
+    } else {
+      state.selectedMachine = '';
+      select.value = '';
+    }
+  } catch (error) {
+    console.error('Error loading machines:', error);
+  }
+}
+
+function onMachineChange(val) {
+  state.selectedMachine = val;
   state.currentPage = 1;
   refreshData();
 }
@@ -308,11 +373,12 @@ function onSearchInput() {
 // --- FETCH DASHBOARD DATA ---
 async function fetchDashboard() {
   if (!state.selectedMonth) return;
-  
+
   try {
     let url = `${API_BASE}/dashboard?mes=${state.selectedMonth}`;
     if (state.selectedBU) url += `&unidad=${encodeURIComponent(state.selectedBU)}`;
     if (state.selectedService) url += `&servicio=${state.selectedService}`;
+    if (state.selectedMachine) url += `&maquina=${state.selectedMachine}`;
     
     const response = await fetch(url, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Error al cargar datos del dashboard.');
@@ -352,11 +418,12 @@ async function fetchDashboard() {
 // --- FETCH DETAILED TABLE ---
 async function fetchTable() {
   if (!state.selectedMonth) return;
-  
+
   try {
     let url = `${API_BASE}/consumo?mes=${state.selectedMonth}&page=${state.currentPage}&limit=${state.limit}`;
     if (state.selectedBU) url += `&unidad=${encodeURIComponent(state.selectedBU)}`;
     if (state.selectedService) url += `&servicio=${state.selectedService}`;
+    if (state.selectedMachine) url += `&maquina=${state.selectedMachine}`;
     if (state.searchText) url += `&search=${encodeURIComponent(state.searchText)}`;
     
     const response = await fetch(url, { headers: getAuthHeaders() });
