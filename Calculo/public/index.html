@@ -82,6 +82,10 @@
           <i class="fa-solid fa-sliders"></i>
           <span>Configuración</span>
         </a>
+        <a href="#" class="menu-item admin-only" id="btn-nav-audit" onclick="switchTab('audit')">
+          <i class="fa-solid fa-clipboard-list"></i>
+          <span>Auditoría</span>
+        </a>
       </nav>
       
       <div class="sidebar-user-info" id="sidebar-user-info">
@@ -455,6 +459,67 @@
       <div style="padding: 20px 24px;">
         <div id="horas-accordion" class="service-accordion">
           <p style="color:var(--text-dim); font-size:14px;">Seleccione un período para cargar horas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════ TAB: AUDITORÍA -->
+  <section id="tab-audit" class="tab-panel">
+    <div class="audit-card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-clipboard-list"></i> Registro de Auditoría</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-top:8px;">Historial completo de todos los cambios realizados en el sistema</p>
+      </div>
+      <div class="card-body">
+        <div class="audit-filters">
+          <input type="text" id="audit-search-usuario" placeholder="Buscar por usuario..." onkeyup="filterAuditLog()">
+          <select id="audit-filter-tipo" onchange="filterAuditLog()">
+            <option value="">Todos los tipos</option>
+            <option value="MODIFICAR">Modificaciones</option>
+            <option value="CIERRE_AUDITORIA">Cierres</option>
+            <option value="IMPORTACION">Importaciones</option>
+          </select>
+          <select id="audit-filter-tabla" onchange="filterAuditLog()">
+            <option value="">Todas las tablas</option>
+            <option value="inventario_mensual">Inventario</option>
+            <option value="maquinas_potencia">Máquinas</option>
+            <option value="cierres_mensuales">Cierres</option>
+          </select>
+          <button class="btn btn-secondary" onclick="exportAuditLog()">
+            <i class="fa-solid fa-download"></i> Exportar CSV
+          </button>
+        </div>
+
+        <div class="table-container audit-table-container">
+          <table id="audit-table" class="audit-table">
+            <thead>
+              <tr>
+                <th>Fecha/Hora</th>
+                <th>Usuario</th>
+                <th>Operación</th>
+                <th>Tabla</th>
+                <th>ID Registro</th>
+                <th>Descripción</th>
+                <th>Valor Anterior</th>
+                <th>Valor Nuevo</th>
+              </tr>
+            </thead>
+            <tbody id="audit-body">
+              <tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-dim);">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-container">
+          <div class="pagination-info">
+            Mostrando <span id="audit-pag-start">0</span> a <span id="audit-pag-end">0</span> de <span id="audit-pag-total">0</span> registros
+          </div>
+          <div class="pagination-controls">
+            <button class="btn-pag" id="audit-btn-prev" onclick="auditPrevPage()"><i class="fa-solid fa-chevron-left"></i></button>
+            <span class="pag-pages" id="audit-pag-numbers"></span>
+            <button class="btn-pag" id="audit-btn-next" onclick="auditNextPage()"><i class="fa-solid fa-chevron-right"></i></button>
+          </div>
         </div>
       </div>
     </div>

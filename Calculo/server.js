@@ -5,7 +5,7 @@ const multer = require('multer');
 const xlsx = require('xlsx');
 const crypto = require('crypto');
 const fs = require('fs');
-const { initDatabase, dbRun, dbAll, dbGet, hashPassword } = require('./database');
+const { initDatabase, dbRun, dbAll, dbGet, hashPassword, registrarCambio } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -587,9 +587,26 @@ app.put('/api/consumo/:id', authenticate, async (req, res) => {
     const hs_dia_val = parseFloat(hs_dia);
     const calculo_val = potencia_val * hs_dia_val;
 
+    // Get old values for audit log
+    const oldMachine = await dbGet('SELECT potencia FROM maquinas_potencia WHERE nro_maquina = ?', [current.nro_maquina]);
+    const oldInventario = await dbGet('SELECT hs_dia, calculo FROM inventario_mensual WHERE id = ?', [id]);
+
     await dbRun('BEGIN TRANSACTION');
     await dbRun('UPDATE maquinas_potencia SET potencia = ? WHERE nro_maquina = ?', [potencia_val, current.nro_maquina]);
     await dbRun('UPDATE inventario_mensual SET hs_dia = ?, calculo = ? WHERE id = ?', [hs_dia_val, calculo_val, id]);
+
+    // Register changes in audit log
+    if (oldMachine && oldMachine.potencia !== potencia_val) {
+      await registrarCambio(req.user.userId, req.user.nombre, 'MODIFICAR', 'maquinas_potencia', current.nro_maquina,
+        oldMachine.potencia.toString(), potencia_val.toString(), `Potencia modificada de ${oldMachine.potencia}W a ${potencia_val}W`);
+    }
+    if (oldInventario && (oldInventario.hs_dia !== hs_dia_val || oldInventario.calculo !== calculo_val)) {
+      await registrarCambio(req.user.userId, req.user.nombre, 'MODIFICAR', 'inventario_mensual', id,
+        `hs_dia: ${oldInventario.hs_dia}, calc: ${oldInventario.calculo}`,
+        `hs_dia: ${hs_dia_val}, calc: ${calculo_val}`,
+        `Horas/día cambió de ${oldInventario.hs_dia}h a ${hs_dia_val}h`);
+    }
+
     await dbRun('COMMIT');
 
     const updatedRow = await dbGet(`
@@ -725,6 +742,12 @@ app.post('/api/cierres', authenticate, uploadDisk.single('foto'), async (req, re
       'INSERT INTO cierres_mensuales (mes, nro_casa, usuario_id, fecha_cierre, foto_auditoria) VALUES (?, ?, ?, ?, ?)',
       [mes, parseInt(nro_casa), req.user.userId, new Date().toISOString(), req.file.filename]
     );
+
+    // Register closure in audit log
+    const servicio = await dbGet('SELECT nombre_servicio FROM servicios_casas WHERE nro_casa = ?', [nro_casa]);
+    await registrarCambio(req.user.userId, req.user.nombre, 'CIERRE_AUDITORIA', 'cierres_mensuales', parseInt(nro_casa),
+      '', `Período cerrado: ${mes}`, `Cierre de auditoría para ${servicio?.nombre_servicio || 'Servicio ' + nro_casa} - Mes ${mes}`);
+
     res.json({ success: true, foto: req.file.filename });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -814,6 +837,11 @@ app.post('/api/import', authenticate, requireAdmin, uploadMemory.single('file'),
     }
 
     await dbRun(`INSERT INTO importes (filename, mes, fecha_importacion, total_filas) VALUES (?, ?, ?, ?)`, [file.originalname, mes, new Date().toISOString(), importedCount]);
+
+    // Register import in audit log
+    await registrarCambio(req.user.userId, req.user.nombre, 'IMPORTACION', 'inventario_mensual', null, '', importedCount.toString(),
+      `Importación de ${importedCount} registros desde ${file.originalname} para el período ${mes}`);
+
     await dbRun('COMMIT');
     res.json({ success: true, count: importedCount, message: `Se importaron ${importedCount} filas para el período ${mes}.` });
   } catch (error) {
@@ -842,6 +870,76 @@ app.get('/api/imports', authenticate, requireAdmin, async (req, res) => {
   try {
     const rows = await dbAll('SELECT * FROM importes ORDER BY fecha_importacion DESC');
     res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIT LOG ROUTES
+// ═══════════════════════════════════════════════════════════════════════════
+
+// GET /api/audit-log - Get audit log (admin only, with filters)
+app.get('/api/audit-log', authenticate, requireAdmin, async (req, res) => {
+  const { tipo, tabla, usuario, desde, hasta, page = 1, limit = 50 } = req.query;
+  const offset = (parseInt(page) - 1) * parseInt(limit);
+
+  try {
+    let countSql = 'SELECT COUNT(*) as total FROM audit_log WHERE 1=1';
+    let querySql = `
+      SELECT id, usuario_id, nombre_usuario, tipo_operacion, tabla_afectada,
+             registro_id, valor_anterior, valor_nuevo, descripcion, fecha_cambio
+      FROM audit_log WHERE 1=1
+    `;
+    const params = [];
+
+    if (tipo) { countSql += ' AND tipo_operacion = ?'; querySql += ' AND tipo_operacion = ?'; params.push(tipo); }
+    if (tabla) { countSql += ' AND tabla_afectada = ?'; querySql += ' AND tabla_afectada = ?'; params.push(tabla); }
+    if (usuario) { countSql += ' AND nombre_usuario LIKE ?'; querySql += ' AND nombre_usuario LIKE ?'; params.push(`%${usuario}%`); }
+    if (desde) { countSql += ' AND fecha_cambio >= ?'; querySql += ' AND fecha_cambio >= ?'; params.push(desde); }
+    if (hasta) { countSql += ' AND fecha_cambio <= ?'; querySql += ' AND fecha_cambio <= ?'; params.push(hasta); }
+
+    querySql += ' ORDER BY fecha_cambio DESC LIMIT ? OFFSET ?';
+    const queryParams = [...params, parseInt(limit), offset];
+
+    const totalRes = await dbGet(countSql, params);
+    const rows = await dbAll(querySql, queryParams);
+
+    res.json({ rows, total: totalRes.total, page: parseInt(page), totalPages: Math.ceil(totalRes.total / parseInt(limit)) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/audit-log/stats - Audit log statistics
+app.get('/api/audit-log/stats', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const stats = await dbGet(`
+      SELECT
+        COUNT(*) as total_cambios,
+        COUNT(DISTINCT nombre_usuario) as usuarios_activos,
+        COUNT(DISTINCT tipo_operacion) as tipos_operacion,
+        COUNT(DISTINCT tabla_afectada) as tablas_afectadas,
+        MAX(fecha_cambio) as ultimo_cambio
+      FROM audit_log
+    `);
+
+    const porTipo = await dbAll(`
+      SELECT tipo_operacion, COUNT(*) as cantidad
+      FROM audit_log
+      GROUP BY tipo_operacion
+      ORDER BY cantidad DESC
+    `);
+
+    const porUsuario = await dbAll(`
+      SELECT nombre_usuario, COUNT(*) as cantidad
+      FROM audit_log
+      GROUP BY nombre_usuario
+      ORDER BY cantidad DESC
+      LIMIT 10
+    `);
+
+    res.json({ stats, porTipo, porUsuario });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

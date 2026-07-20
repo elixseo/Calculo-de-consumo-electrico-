@@ -1622,3 +1622,144 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════════════════════════════════════
+
+const auditState = {
+  currentPage: 1,
+  limit: 50,
+  total: 0
+};
+
+async function loadAuditLog() {
+  if (state.currentUser.role !== 'admin') {
+    showToast('Error', 'error', 'Solo administradores pueden ver el audit log.');
+    return;
+  }
+
+  try {
+    const tipo = document.getElementById('audit-filter-tipo')?.value || '';
+    const tabla = document.getElementById('audit-filter-tabla')?.value || '';
+    const usuario = document.getElementById('audit-search-usuario')?.value || '';
+
+    let url = `${API_BASE}/audit-log?page=${auditState.currentPage}&limit=${auditState.limit}`;
+    if (tipo) url += `&tipo=${encodeURIComponent(tipo)}`;
+    if (tabla) url += `&tabla=${encodeURIComponent(tabla)}`;
+    if (usuario) url += `&usuario=${encodeURIComponent(usuario)}`;
+
+    const response = await fetch(url, { headers: getAuthHeaders() });
+    if (!response.ok) throw new Error('Error al cargar audit log.');
+    const data = await response.json();
+
+    renderAuditLog(data.rows);
+    renderAuditPagination(data.total, data.page, data.totalPages);
+    auditState.total = data.total;
+  } catch (error) {
+    showToast('Error', 'error', error.message);
+  }
+}
+
+function renderAuditLog(rows) {
+  const tbody = document.getElementById('audit-body');
+  tbody.innerHTML = '';
+
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-dim);">No hay registros de auditoría.</td></tr>';
+    return;
+  }
+
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    const fecha = new Date(row.fecha_cambio).toLocaleDateString('es-AR') + ' ' + new Date(row.fecha_cambio).toLocaleTimeString('es-AR');
+
+    tr.innerHTML = `
+      <td><small>${fecha}</small></td>
+      <td>${row.nombre_usuario || '-'}</td>
+      <td><span class="badge badge-${row.tipo_operacion.toLowerCase()}">${row.tipo_operacion}</span></td>
+      <td><code>${row.tabla_afectada || '-'}</code></td>
+      <td>${row.registro_id || '-'}</td>
+      <td>${row.descripcion || '-'}</td>
+      <td><code class="code-small">${row.valor_anterior || '-'}</code></td>
+      <td><code class="code-small">${row.valor_nuevo || '-'}</code></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAuditPagination(total, page, totalPages) {
+  document.getElementById('audit-pag-total').textContent = total.toLocaleString();
+  const start = Math.min((page - 1) * auditState.limit + 1, total);
+  const end = Math.min(page * auditState.limit, total);
+  document.getElementById('audit-pag-start').textContent = start;
+  document.getElementById('audit-pag-end').textContent = end;
+
+  const pagesEl = document.getElementById('audit-pag-numbers');
+  pagesEl.innerHTML = '';
+  for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+    const btn = document.createElement('button');
+    btn.className = `pag-btn ${i === page ? 'active' : ''}`;
+    btn.textContent = i;
+    btn.onclick = () => {
+      auditState.currentPage = i;
+      loadAuditLog();
+    };
+    pagesEl.appendChild(btn);
+  }
+}
+
+function filterAuditLog() {
+  auditState.currentPage = 1;
+  loadAuditLog();
+}
+
+function auditPrevPage() {
+  if (auditState.currentPage > 1) {
+    auditState.currentPage--;
+    loadAuditLog();
+  }
+}
+
+function auditNextPage() {
+  if (auditState.currentPage * auditState.limit < auditState.total) {
+    auditState.currentPage++;
+    loadAuditLog();
+  }
+}
+
+function exportAuditLog() {
+  const tipo = document.getElementById('audit-filter-tipo')?.value || '';
+  const tabla = document.getElementById('audit-filter-tabla')?.value || '';
+  const usuario = document.getElementById('audit-search-usuario')?.value || '';
+
+  const rows = Array.from(document.querySelectorAll('#audit-body tr'));
+  const headers = ['Fecha/Hora', 'Usuario', 'Operación', 'Tabla', 'ID Registro', 'Descripción', 'Valor Anterior', 'Valor Nuevo'];
+
+  let csv = headers.join(',') + '\n';
+  rows.forEach(row => {
+    const cells = Array.from(row.querySelectorAll('td')).map(td => {
+      let text = td.textContent.trim();
+      text = text.replace(/"/g, '""');
+      return `"${text}"`;
+    });
+    csv += cells.join(',') + '\n';
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audit-log-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+// Load audit log when tab is switched
+const originalSwitchTab = window.switchTab;
+window.switchTab = function(tabName) {
+  originalSwitchTab(tabName);
+  if (tabName === 'audit' && state.currentUser?.role === 'admin') {
+    loadAuditLog();
+  }
+};

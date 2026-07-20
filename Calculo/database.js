@@ -134,7 +134,24 @@ function initDatabase() {
         )
       `, (err) => { if (err) reject(err); });
 
-      // 7. Monthly Closures + Audit Photo Table
+      // 7. Audit Log Table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS audit_log (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          usuario_id INTEGER,
+          nombre_usuario TEXT,
+          tipo_operacion TEXT,
+          tabla_afectada TEXT,
+          registro_id INTEGER,
+          valor_anterior TEXT,
+          valor_nuevo TEXT,
+          descripcion TEXT,
+          fecha_cambio TEXT,
+          FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+        )
+      `, (err) => { if (err) reject(err); });
+
+      // 8. Monthly Closures + Audit Photo Table
       db.run(`
         CREATE TABLE IF NOT EXISTS cierres_mensuales (
           mes TEXT NOT NULL,
@@ -158,11 +175,21 @@ function initDatabase() {
   });
 }
 
+// Audit Log function
+const registrarCambio = (usuarioId, nombreUsuario, tipoOperacion, tablaAfectada, registroId, valorAnterior, valorNuevo, descripcion) => {
+  return dbRun(
+    `INSERT INTO audit_log (usuario_id, nombre_usuario, tipo_operacion, tabla_afectada, registro_id, valor_anterior, valor_nuevo, descripcion, fecha_cambio)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [usuarioId, nombreUsuario, tipoOperacion, tablaAfectada, registroId, valorAnterior, valorNuevo, descripcion, new Date().toISOString()]
+  );
+};
+
 module.exports = {
   db,
   initDatabase,
   dbRun,
   dbAll,
   dbGet,
-  hashPassword
+  hashPassword,
+  registrarCambio
 };
