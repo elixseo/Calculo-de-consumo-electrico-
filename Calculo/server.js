@@ -10,6 +10,11 @@ const { initDatabase, dbRun, dbAll, dbGet, hashPassword, registrarCambio } = req
 const app = express();
 const PORT = process.env.PORT || 3005;
 
+// Máquinas a combustible (nafta/diésel) que NO consumen electricidad.
+// Se excluyen de todos los cálculos y gráficos de consumo eléctrico.
+// Cubre: "... A EXPLOSION" y "TRACTOR"/"MINITRACTOR"/"P/TRACTOR".
+const EXCLUIR_COMBUSTIBLE = "AND p.maquina NOT LIKE '%EXPLOSION%' AND p.maquina NOT LIKE '%TRACTOR%'";
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'public', 'uploads', 'cierres');
 if (!fs.existsSync(uploadsDir)) {
@@ -384,8 +389,8 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
     const [year, monthStr] = mes.split('-');
     const daysInMonth = new Date(parseInt(year), parseInt(monthStr), 0).getDate();
 
-    // Solo computar máquinas con potencia > 0 (las sin potencia no se cuentan)
-    let filterSql = 'WHERE i.mes = ? AND p.potencia > 0';
+    // Solo computar máquinas con potencia > 0 y que usen electricidad (no combustible)
+    let filterSql = `WHERE i.mes = ? AND p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}`;
     let params = [mes];
 
     if (unidad) { filterSql += ' AND i.unidad_negocio = ?'; params.push(unidad); }
@@ -422,7 +427,8 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
       const trendRows = await dbAll(`
         SELECT i.mes, SUM(i.calculo) / 1000.0 AS total
         FROM inventario_mensual i
-        WHERE i.nro_casa = ?
+        JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
+        WHERE i.nro_casa = ? AND p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}
         GROUP BY i.mes ORDER BY i.mes ASC
       `, [parseInt(servicio)]);
       const serviceObj = await dbGet('SELECT nombre_servicio FROM servicios_casas WHERE nro_casa = ?', [parseInt(servicio)]);
@@ -433,8 +439,8 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
         return { mes: r.mes, [serviceLabel]: r.total * d };
       });
     } else {
-      // Solo computar máquinas con potencia > 0
-      let trendFilterSql = 'WHERE p.potencia > 0';
+      // Solo computar máquinas con potencia > 0 y que usen electricidad (no combustible)
+      let trendFilterSql = `WHERE p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}`;
       let trendParams = [];
       if (req.user.role === 'usuario') {
         const assigned = await dbAll('SELECT nro_casa FROM usuario_servicios WHERE usuario_id = ?', [req.user.userId]);
@@ -521,13 +527,13 @@ app.get('/api/consumo', authenticate, async (req, res) => {
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   try {
-    // Solo computar máquinas con potencia > 0 (las sin potencia no se cuentan)
+    // Solo computar máquinas con potencia > 0 y que usen electricidad (no combustible)
     let countSql = `
       SELECT COUNT(*) as total
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       JOIN servicios_casas s ON i.nro_casa = s.nro_casa
-      WHERE i.mes = ? AND p.potencia > 0
+      WHERE i.mes = ? AND p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}
     `;
     let querySql = `
       SELECT i.id, i.mes, i.nro_maquina, p.maquina, p.marca, p.modelo,
@@ -536,7 +542,7 @@ app.get('/api/consumo', authenticate, async (req, res) => {
       FROM inventario_mensual i
       JOIN maquinas_potencia p ON i.nro_maquina = p.nro_maquina
       JOIN servicios_casas s ON i.nro_casa = s.nro_casa
-      WHERE i.mes = ? AND p.potencia > 0
+      WHERE i.mes = ? AND p.potencia > 0 ${EXCLUIR_COMBUSTIBLE}
     `;
 
     const params = [mes];
