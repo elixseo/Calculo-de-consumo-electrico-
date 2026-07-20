@@ -78,6 +78,10 @@
           <i class="fa-solid fa-users-gear"></i>
           <span>Gestión de Usuarios</span>
         </a>
+        <a href="#" class="menu-item" id="btn-nav-config" onclick="switchTab('config')">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Configuración</span>
+        </a>
       </nav>
       
       <div class="sidebar-user-info" id="sidebar-user-info">
@@ -451,6 +455,36 @@
       <div style="padding: 20px 24px;">
         <div id="horas-accordion" class="service-accordion">
           <p style="color:var(--text-dim); font-size:14px;">Seleccione un período para cargar horas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════ TAB: CONFIGURACIÓN -->
+  <section id="tab-config" class="tab-panel">
+    <div class="config-card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-sliders"></i> Seleccionar Servicios para Incluir en Cálculos</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-top:8px;">Marca los servicios que deseas incluir. Desmarca para excluir del cálculo de consumo.</p>
+      </div>
+      <div class="card-body">
+        <div class="config-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="config-search-input" placeholder="Buscar servicio..." oninput="filterConfigServices(this.value)">
+        </div>
+        <div class="services-config-list" id="services-config-list">
+          <p style="color:var(--text-dim); text-align:center; padding:20px;">Cargando servicios...</p>
+        </div>
+        <div class="config-actions">
+          <button class="btn btn-secondary" onclick="selectAllServices()">
+            <i class="fa-solid fa-check-double"></i> Seleccionar Todo
+          </button>
+          <button class="btn btn-secondary" onclick="deselectAllServices()">
+            <i class="fa-solid fa-xmark"></i> Desseleccionar Todo
+          </button>
+          <button class="btn btn-primary" onclick="saveConfigServices()">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Configuración
+          </button>
         </div>
       </div>
     </div>

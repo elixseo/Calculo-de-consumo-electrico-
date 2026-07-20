@@ -10,12 +10,21 @@ const state = {
   selectedFile: null,
   currentUser: null,
   token: null,
+  excludedServices: new Set(),
   charts: {
     trend: null,
     machines: null,
     services: null
   }
 };
+
+// Load excluded services from localStorage on startup
+function loadExcludedServices() {
+  const saved = localStorage.getItem('excludedServices');
+  if (saved) {
+    state.excludedServices = new Set(JSON.parse(saved));
+  }
+}
 
 // API Base URL
 const API_BASE = '/api';
@@ -136,15 +145,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Initialize Application
 async function initApp() {
+  loadExcludedServices();
   showToast('Cargando...', 'info', 'Iniciando el sistema');
   await loadMonths();
   if (state.selectedMonth) {
     await loadServices();
+    await loadConfigServices();
     refreshData();
   } else {
     switchTab('import');
     showToast('Base de datos vacía', 'warning', 'Por favor, cargue una planilla Excel para comenzar.');
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIGURATION: Manage excluded services
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadConfigServices() {
+  try {
+    let url = `${API_BASE}/servicios`;
+    const response = await fetch(url, { headers: getAuthHeaders() });
+    if (!response.ok) throw new Error('Error al cargar servicios.');
+    const services = await response.json();
+
+    const container = document.getElementById('services-config-list');
+    if (!services || services.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-dim); text-align:center;">No hay servicios disponibles.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    const serviceList = document.createElement('div');
+    serviceList.className = 'service-config-items';
+    serviceList.id = 'service-config-items';
+
+    services.forEach(svc => {
+      const isExcluded = state.excludedServices.has(String(svc.nro_casa));
+      const item = document.createElement('label');
+      item.className = 'service-config-item';
+      item.innerHTML = `
+        <input type="checkbox" class="config-service-checkbox" value="${svc.nro_casa}" ${!isExcluded ? 'checked' : ''} />
+        <span class="service-name">${svc.nombre_servicio || `Servicio Casa ${svc.nro_casa}`}</span>
+      `;
+      serviceList.appendChild(item);
+    });
+
+    container.appendChild(serviceList);
+  } catch (error) {
+    console.error('Error loading config services:', error);
+    document.getElementById('services-config-list').innerHTML = '<p style="color:red;">Error al cargar servicios.</p>';
+  }
+}
+
+function filterConfigServices(searchText) {
+  const items = document.querySelectorAll('.service-config-item');
+  const text = searchText.toLowerCase();
+  items.forEach(item => {
+    const name = item.querySelector('.service-name').textContent.toLowerCase();
+    item.style.display = name.includes(text) ? '' : 'none';
+  });
+}
+
+function selectAllServices() {
+  document.querySelectorAll('.config-service-checkbox').forEach(cb => {
+    cb.checked = true;
+  });
+}
+
+function deselectAllServices() {
+  document.querySelectorAll('.config-service-checkbox').forEach(cb => {
+    cb.checked = false;
+  });
+}
+
+function saveConfigServices() {
+  const checkboxes = document.querySelectorAll('.config-service-checkbox');
+  const excluded = new Set();
+
+  checkboxes.forEach(cb => {
+    if (!cb.checked) {
+      excluded.add(String(cb.value));
+    }
+  });
+
+  state.excludedServices = excluded;
+  localStorage.setItem('excludedServices', JSON.stringify(Array.from(excluded)));
+  showToast('Éxito', 'success', 'Configuración guardada. Actualizando datos...');
+
+  state.currentPage = 1;
+  refreshData();
 }
 
 
@@ -438,17 +528,23 @@ async function fetchTable() {
   }
 }
 
+// Filter rows by excluded services
+function filterRowsByExcludedServices(rows) {
+  return rows.filter(row => !state.excludedServices.has(String(row.nro_casa)));
+}
+
 // Render Table Rows
 function renderTable(rows) {
+  const filteredRows = filterRowsByExcludedServices(rows);
   const tbody = document.getElementById('table-body');
   tbody.innerHTML = '';
-  
-  if (rows.length === 0) {
+
+  if (filteredRows.length === 0) {
     tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-dim); padding: 40px;">No se encontraron registros.</td></tr>`;
     return;
   }
-  
-  rows.forEach(row => {
+
+  filteredRows.forEach(row => {
     const tr = document.createElement('tr');
     tr.dataset.id = row.id;
     
