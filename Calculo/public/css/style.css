@@ -178,14 +178,21 @@ body.dark-theme {
 
 .sidebar-control-group select {
   padding: 8px 10px;
-  background: var(--input-bg);
+  background: #1a1f35;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   color: var(--text-main);
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   width: 100%;
+}
+
+.sidebar-control-group select option {
+  background-color: #1a1f35;
+  color: #f3f4f6;
+  padding: 6px 8px;
 }
 
 .sidebar-control-group select:hover {
