@@ -429,10 +429,14 @@ app.get('/api/dashboard', authenticate, async (req, res) => {
         } else {
           trendFilterSql = 'WHERE 1=0';
         }
+      } else if (unidad) {
+        // Filter trend by selected business unit
+        trendFilterSql = 'WHERE i.unidad_negocio = ?';
+        trendParams.push(unidad);
       }
 
       const trendRows = await dbAll(`
-        SELECT 
+        SELECT
           i.mes,
           SUM(CASE WHEN i.unidad_negocio = 'Limpiolux S.A.' THEN i.calculo ELSE 0 END) / 1000.0 AS limpiolux,
           SUM(CASE WHEN i.unidad_negocio = 'Ceiling Solution S.A.' THEN i.calculo ELSE 0 END) / 1000.0 AS ceiling
