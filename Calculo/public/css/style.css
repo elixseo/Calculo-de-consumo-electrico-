@@ -1974,3 +1974,240 @@ canvas {
   max-width: 100%;
 }
 
+/* ═════════════════════════════════════════════════════════════════════════ */
+/* RESPONSIVE DESIGN - MEDIA QUERIES */
+/* ═════════════════════════════════════════════════════════════════════════ */
+
+/* Tablets: max-width 1024px */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 220px;
+  }
+
+  .main-content {
+    padding: 24px 28px;
+    gap: 24px;
+  }
+
+  .sidebar-control-group label {
+    font-size: 11px;
+  }
+
+  .sidebar-control-group select {
+    font-size: 12px;
+    padding: 7px 8px;
+  }
+}
+
+/* Mobile tablets: max-width 768px */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 70px;
+    --header-height: 60px;
+  }
+
+  /* Hide sidebar text, show only icons */
+  .sidebar-brand .brand-info {
+    display: none;
+  }
+
+  .sidebar-menu {
+    padding: 16px 8px;
+  }
+
+  .menu-item {
+    padding: 12px 8px;
+    gap: 0;
+    justify-content: center;
+  }
+
+  .menu-item span {
+    display: none;
+  }
+
+  .menu-item i {
+    font-size: 20px;
+  }
+
+  /* Hide filters on mobile - show only in expanded state */
+  .sidebar-filters {
+    display: none;
+    position: absolute;
+    left: 70px;
+    top: 60px;
+    width: 250px;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    max-height: 500px;
+    z-index: 50;
+  }
+
+  .sidebar-filters.show {
+    display: block;
+  }
+
+  .sidebar-footer {
+    padding: 12px 8px;
+  }
+
+  .user-profile {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .user-profile i {
+    font-size: 24px;
+  }
+
+  .user-profile h4,
+  .user-profile span {
+    display: none;
+  }
+
+  /* Main content adjustments */
+  .main-content {
+    margin-left: var(--sidebar-width);
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .top-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .top-bar h1 {
+    font-size: 20px;
+  }
+
+  /* Filter badges - stack vertically on small screens */
+  .active-filters-display {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filter-badge {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  /* KPI Cards - 2 columns on tablet */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* Table adjustments */
+  #data-table {
+    font-size: 12px;
+  }
+
+  #data-table th,
+  #data-table td {
+    padding: 8px 6px;
+  }
+
+  #data-table th:nth-child(1),
+  #data-table td:nth-child(1) {
+    min-width: 150px;
+  }
+
+  #data-table th:nth-child(3),
+  #data-table td:nth-child(3) {
+    min-width: 150px;
+  }
+
+  #data-table th:nth-child(4),
+  #data-table td:nth-child(4) {
+    min-width: 150px;
+  }
+}
+
+/* Small mobile: max-width 480px */
+@media (max-width: 480px) {
+  :root {
+    --sidebar-width: 60px;
+  }
+
+  .main-content {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .top-bar h1 {
+    font-size: 18px;
+  }
+
+  .top-bar p {
+    font-size: 12px;
+  }
+
+  /* KPI Cards - single column */
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-card h3 {
+    font-size: 12px;
+  }
+
+  .kpi-card .kpi-value {
+    font-size: 20px;
+  }
+
+  /* Hide chart titles on very small screens */
+  .chart-card h3 {
+    font-size: 13px;
+  }
+
+  /* Table - horizontal scroll for small screens */
+  #data-table {
+    font-size: 11px;
+  }
+
+  #data-table th,
+  #data-table td {
+    padding: 6px 4px;
+  }
+
+  #data-table th:nth-child(1),
+  #data-table td:nth-child(1) {
+    min-width: 120px;
+  }
+
+  #data-table th:nth-child(3),
+  #data-table td:nth-child(3) {
+    min-width: 100px;
+  }
+
+  #data-table th:nth-child(4),
+  #data-table td:nth-child(4) {
+    min-width: 120px;
+  }
+
+  /* Modal/Dialog - full screen on mobile */
+  .modal {
+    width: 95vw;
+    margin: auto;
+  }
+
+  .modal-content {
+    padding: 16px;
+  }
+
+  /* Form inputs - full width */
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Sidebar filters popup - adjust size */
+  .sidebar-filters {
+    width: calc(100vw - 60px);
+    left: 60px;
+  }
+}
+
