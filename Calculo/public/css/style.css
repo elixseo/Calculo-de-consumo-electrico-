@@ -106,6 +106,70 @@ body.dark-theme {
   flex-grow: 1;
 }
 
+/* Sidebar Filters */
+.sidebar-filters {
+  padding: 0 16px;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.sidebar-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-control-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.sidebar-control-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-control-group label i {
+  font-size: 11px;
+  color: var(--cyan);
+}
+
+.sidebar-control-group select {
+  padding: 8px 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.sidebar-control-group select:hover {
+  border-color: var(--cyan);
+  background: var(--card-bg);
+}
+
+.sidebar-control-group select:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
 .menu-item {
   display: flex;
   align-items: center;

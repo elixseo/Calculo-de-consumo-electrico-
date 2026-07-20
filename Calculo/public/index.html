@@ -87,7 +87,46 @@
           <span>Auditoría</span>
         </a>
       </nav>
-      
+
+      <!-- Sidebar Filters -->
+      <div class="sidebar-filters">
+        <h4 style="margin: 16px 0 12px 0; font-size: 12px; text-transform: uppercase; color: var(--text-dim); padding: 0 16px;">Filtros</h4>
+
+        <!-- Month Selector -->
+        <div class="sidebar-control-group">
+          <label for="select-month-global"><i class="fa-regular fa-calendar"></i> Período:</label>
+          <select id="select-month-global" onchange="onPeriodChange(this.value)">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <!-- Business Unit Filter -->
+        <div class="sidebar-control-group">
+          <label for="select-bu-global"><i class="fa-solid fa-briefcase"></i> Unidad:</label>
+          <select id="select-bu-global" onchange="onBUChange(this.value)">
+            <option value="">Todas las Unidades</option>
+            <option value="Limpiolux S.A.">Limpiolux S.A.</option>
+            <option value="Ceiling Solution S.A.">Ceiling Solution S.A.</option>
+          </select>
+        </div>
+
+        <!-- Service Filter -->
+        <div class="sidebar-control-group">
+          <label for="select-service-global"><i class="fa-solid fa-handshake-angle"></i> Servicio:</label>
+          <select id="select-service-global" onchange="onServiceChange(this.value)">
+            <option value="">Todos los Servicios</option>
+          </select>
+        </div>
+
+        <!-- Machine Filter -->
+        <div class="sidebar-control-group">
+          <label for="select-machine-global"><i class="fa-solid fa-gears"></i> Máquina:</label>
+          <select id="select-machine-global" onchange="onMachineChange(this.value)">
+            <option value="">Todas las Máquinas</option>
+          </select>
+        </div>
+      </div>
+
       <div class="sidebar-user-info" id="sidebar-user-info">
         <div class="user-avatar" id="sidebar-avatar">A</div>
         <div class="user-meta">
@@ -106,42 +145,6 @@
         <div class="header-title">
           <h1 id="page-title">Panel General de Consumo</h1>
           <p id="page-subtitle">Indicadores y estadísticas de consumo eléctrico de maquinarias</p>
-        </div>
-        
-        <div class="header-controls">
-          <!-- Month Selector -->
-          <div class="control-group">
-            <label for="select-month-global"><i class="fa-regular fa-calendar"></i> Período:</label>
-            <select id="select-month-global" onchange="onPeriodChange(this.value)">
-              <!-- Dynamically populated -->
-            </select>
-          </div>
-          
-          <!-- Business Unit Filter -->
-          <div class="control-group">
-            <label for="select-bu-global"><i class="fa-solid fa-briefcase"></i> Unidad:</label>
-            <select id="select-bu-global" onchange="onBUChange(this.value)">
-              <option value="">Todas las Unidades</option>
-              <option value="Limpiolux S.A.">Limpiolux S.A.</option>
-              <option value="Ceiling Solution S.A.">Ceiling Solution S.A.</option>
-            </select>
-          </div>
-
-          <!-- Service Filter -->
-          <div class="control-group">
-            <label for="select-service-global"><i class="fa-solid fa-handshake-angle"></i> Servicio:</label>
-            <select id="select-service-global" onchange="onServiceChange(this.value)" style="max-width: 260px;">
-              <option value="">Todos los Servicios</option>
-            </select>
-          </div>
-
-          <!-- Machine Filter -->
-          <div class="control-group">
-            <label for="select-machine-global"><i class="fa-solid fa-gears"></i> Máquina:</label>
-            <select id="select-machine-global" onchange="onMachineChange(this.value)" style="max-width: 260px;">
-              <option value="">Todas las Máquinas</option>
-            </select>
-          </div>
         </div>
       </header>
 
